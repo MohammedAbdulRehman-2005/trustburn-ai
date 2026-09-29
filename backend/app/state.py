@@ -548,6 +548,9 @@ class SystemState:
 
     def generate_grok_narrative(self, component_id: str, user_api_key: Optional[str] = None) -> Dict[str, Any]:
         """Generates natural language QA diagnostic report using Grok LLM or physics engine."""
+        if component_id in self.grok_narrative_cache and not user_api_key:
+            return self.grok_narrative_cache[component_id]
+
         traj = next((t for t in self.trajectories if t.component_id == component_id), None)
         if not traj:
             raise KeyError(f"Component '{component_id}' not found.")
