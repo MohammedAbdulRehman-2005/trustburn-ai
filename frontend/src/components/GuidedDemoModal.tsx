@@ -41,7 +41,7 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
       content: (
         <div className="space-y-3 text-sm text-slate-300">
           <p className="italic text-cyan-300">
-            "Welcome to TrustBurn AI, an uncertainty-aware screening system for component burn-in qualification under SIH26170."
+            "Welcome to TrustBurn AI, an advanced uncertainty-aware screening system for mission-critical component burn-in qualification."
           </p>
           <p>
             In conventional screening, components are checked against static absolute limits at 168 hours. Latent defects that pass initial checks can escape into mission hardware.

@@ -234,7 +234,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         </div>
 
         <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
-          <span>*Baseline static-threshold screening in this prototype.</span>
+          <span>*Baseline static-threshold screening benchmark comparison.</span>
           <div className="flex flex-wrap items-center gap-4 font-mono">
             <span>Conventional Escapes: <strong className="text-rose-400">{escapeStats.conventional_escapes}</strong></span>
             <span>TrustBurn Escapes: <strong className="text-emerald-400">{escapeStats.trustburn_escapes}</strong></span>

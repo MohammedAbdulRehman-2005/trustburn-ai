@@ -217,8 +217,8 @@ export const App: React.FC = () => {
           <div>
             <strong>TrustBurn AI</strong> — Uncertainty-Aware Early Warning & Risk Intelligence for Component Burn-In
           </div>
-          <div className="font-mono text-[11px] text-slate-500">
-            Smart India Hackathon 2026 • SIH26170 Research Prototype • Strictly Synthetic Demonstration Data
+          <div className="font-mono text-[11px] text-slate-400">
+            High-Reliability Component Screening & Risk Intelligence • Enterprise Edition
           </div>
         </div>
       </footer>

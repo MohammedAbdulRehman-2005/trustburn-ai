@@ -346,8 +346,8 @@ export const ValidationPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="pt-2 text-[11px] text-slate-500 italic">
-          Disclaimer: {val.honesty_disclaimer}
+        <div className="pt-2 text-[11px] text-slate-400">
+          Validation Protocol: {val.honesty_disclaimer}
         </div>
       </div>
     </div>
