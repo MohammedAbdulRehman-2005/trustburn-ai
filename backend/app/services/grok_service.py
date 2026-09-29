@@ -13,12 +13,29 @@ import os
 import json
 import logging
 from typing import Dict, Any, Optional
+from pathlib import Path
 import httpx
 
 logger = logging.getLogger("trustburn.grok")
 
-GROK_API_URL = "https://api.x.ai/v1/chat/completions"
+# Automatically load .env if available
+_env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
+if _env_path.exists():
+    try:
+        with open(_env_path, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+    except Exception:
+        pass
+
+GROK_XAI_API_URL = "https://api.x.ai/v1/chat/completions"
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+
 DEFAULT_GROK_MODEL = "grok-2-latest"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
 SYSTEM_PROMPT = """You are the TrustBurn AI Scientific Diagnostic Explainer for QA and Reliability Engineers at ISRO / High-Reliability Space Component Qualification.
 
@@ -50,10 +67,15 @@ Format your response in clean, professional Markdown with these exact sections:
 
 
 class GrokDiagnosticService:
-    """Service for generating natural language explanations from SHAP attributions via Grok LLM."""
+    """Service for generating natural language explanations from SHAP attributions via Grok / Groq LLMs."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = DEFAULT_GROK_MODEL):
-        self.api_key = api_key or os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = (
+            api_key
+            or os.getenv("GROQ_API_KEY")
+            or os.getenv("GROK_API_KEY")
+            or os.getenv("XAI_API_KEY")
+        )
         self.model = model
 
     def generate_diagnostic_narrative(
@@ -70,10 +92,16 @@ class GrokDiagnosticService:
     ) -> Dict[str, Any]:
         """Generates an evidence-grounded natural language diagnostic narrative.
         
-        Attempts calling live xAI Grok API if key is present; otherwise falls back to
-        the high-fidelity deterministic physics-grounded explanation engine.
+        Attempts calling live Groq LPU or xAI Grok API if key is present;
+        otherwise falls back to the high-fidelity deterministic physics-grounded explanation engine.
         """
-        active_key = user_api_key or self.api_key or os.getenv("GROK_API_KEY") or os.getenv("XAI_API_KEY")
+        active_key = (
+            user_api_key
+            or self.api_key
+            or os.getenv("GROQ_API_KEY")
+            or os.getenv("GROK_API_KEY")
+            or os.getenv("XAI_API_KEY")
+        )
 
         prompt_payload = self._construct_prompt(
             component_id=component_id,
@@ -88,18 +116,18 @@ class GrokDiagnosticService:
 
         if active_key:
             try:
-                narrative, usage = self._call_grok_api(active_key, prompt_payload)
+                narrative, usage, source_label, active_model = self._call_api(active_key, prompt_payload)
                 return {
                     "component_id": component_id,
                     "narrative": narrative,
-                    "source": "xAI Grok API",
-                    "model": self.model,
+                    "source": source_label,
+                    "model": active_model,
                     "is_live_api": True,
                     "diagnostic_authority_level": "LEVEL_3_HYPOTHESIS",
                     "tokens_used": usage.get("total_tokens", 0) if usage else 0
                 }
             except Exception as e:
-                logger.warning(f"Grok API call failed ({e}). Falling back to deterministic physics engine.")
+                logger.warning(f"Live LLM API call failed ({e}). Falling back to deterministic physics engine.")
                 fallback_narrative = self._generate_deterministic_fallback(
                     component_id=component_id,
                     lot_id=lot_id,
@@ -114,7 +142,7 @@ class GrokDiagnosticService:
                 return {
                     "component_id": component_id,
                     "narrative": fallback_narrative,
-                    "source": "Physics-Grounded Deterministic Engine (Grok Offline Fallback)",
+                    "source": "Physics-Grounded Deterministic Engine (Offline Fallback)",
                     "model": "deterministic-physics-v2.0",
                     "is_live_api": False,
                     "diagnostic_authority_level": "LEVEL_3_HYPOTHESIS",
@@ -135,7 +163,7 @@ class GrokDiagnosticService:
             return {
                 "component_id": component_id,
                 "narrative": fallback_narrative,
-                "source": "Physics-Grounded Deterministic Engine (No GROK_API_KEY Set)",
+                "source": "Physics-Grounded Deterministic Engine (No API Key Configured)",
                 "model": "deterministic-physics-v2.0",
                 "is_live_api": False,
                 "diagnostic_authority_level": "LEVEL_3_HYPOTHESIS"
@@ -215,30 +243,48 @@ FULL SHAP TABLE:
 
 Please generate the natural language diagnostic explanation for the QA Engineer according to the 5 mandatory sections."""
 
-    def _call_grok_api(self, api_key: str, prompt: str) -> tuple[str, Dict[str, Any]]:
-        """Invokes xAI Grok Chat Completion API via HTTP."""
+    def _call_api(self, api_key: str, prompt: str) -> tuple[str, Dict[str, Any], str, str]:
+        """Invokes Groq LPU or xAI Grok Chat Completion API via HTTP based on key format."""
+        clean_key = api_key.strip()
+        if clean_key.startswith("gsk_"):
+            endpoint = GROQ_API_URL
+            model = self.model or DEFAULT_GROQ_MODEL
+            source_label = f"Groq LPU API"
+        else:
+            endpoint = GROK_XAI_API_URL
+            model = self.model or DEFAULT_GROK_MODEL
+            source_label = f"xAI Grok API"
+
         headers = {
-            "Authorization": f"Bearer {api_key.strip()}",
+            "Authorization": f"Bearer {clean_key}",
             "Content-Type": "application/json"
         }
         payload = {
-            "model": self.model,
+            "model": model,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.2,
-            "max_tokens": 1200
+            "max_tokens": 3000
         }
 
-        with httpx.Client(timeout=30.0) as client:
-            response = client.post(GROK_API_URL, headers=headers, json=payload)
+        with httpx.Client(timeout=35.0) as client:
+            response = client.post(endpoint, headers=headers, json=payload)
             if response.status_code != 200:
-                raise RuntimeError(f"xAI API returned HTTP {response.status_code}: {response.text}")
+                # If primary model fails on Groq, attempt fast fallback
+                if clean_key.startswith("gsk_") and model != "openai/gpt-oss-20b":
+                    payload["model"] = "openai/gpt-oss-20b"
+                    model = "openai/gpt-oss-20b"
+                    response = client.post(endpoint, headers=headers, json=payload)
+
+                if response.status_code != 200:
+                    raise RuntimeError(f"LLM API returned HTTP {response.status_code}: {response.text}")
+
             data = response.json()
             narrative = data["choices"][0]["message"]["content"]
             usage = data.get("usage", {})
-            return narrative, usage
+            return narrative, usage, source_label, model
 
     def _generate_deterministic_fallback(
         self,

@@ -41,7 +41,7 @@ export const ExplainableAISection: React.FC<ExplainableAISectionProps> = ({ comp
   const [loadingShap, setLoadingShap] = useState<boolean>(true);
   const [loadingNarrative, setLoadingNarrative] = useState<boolean>(false);
   const [showKeyConfig, setShowKeyConfig] = useState<boolean>(false);
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('trustburn_grok_key') || '');
+  const [apiKey, setApiKey] = useState<string>(() => (import.meta.env.VITE_GROQ_API_KEY as string) || localStorage.getItem('trustburn_grok_key') || '');
   const [showFullTable, setShowFullTable] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -164,10 +164,10 @@ export const ExplainableAISection: React.FC<ExplainableAISectionProps> = ({ comp
             <div>
               <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-amber-400" />
-                xAI Grok API Key (Optional)
+                Groq LPU / xAI Grok API Key
               </h4>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                If provided, calls live <code className="text-cyan-300">grok-2-latest</code> at <code className="text-cyan-300">api.x.ai/v1</code>. If omitted, TrustBurn uses its deterministic physics engine with identical structure.
+                Supports ultra-fast Groq LPU (<code className="text-cyan-300">gsk_...</code>, running <code className="text-cyan-300">openai/gpt-oss-120b</code>) and xAI Grok (<code className="text-cyan-300">xai-...</code>, running <code className="text-cyan-300">grok-2-latest</code>).
               </p>
             </div>
             <button
@@ -181,7 +181,7 @@ export const ExplainableAISection: React.FC<ExplainableAISectionProps> = ({ comp
           <div className="flex gap-2">
             <input
               type="password"
-              placeholder="xai-..."
+              placeholder="gsk_... or xai-..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500"
@@ -467,10 +467,10 @@ export const ExplainableAISection: React.FC<ExplainableAISectionProps> = ({ comp
           {/* Formatted Markdown Content */}
           <div className="prose prose-invert max-w-none text-xs text-slate-300 space-y-3 leading-relaxed">
             {narrativeData.narrative.split('\n\n').map((paragraph, idx) => {
-              if (paragraph.startsWith('### ')) {
+              if (paragraph.startsWith('### ') || paragraph.startsWith('## ')) {
                 return (
                   <h4 key={idx} className="text-xs font-bold text-cyan-300 uppercase tracking-wider pt-2 border-b border-slate-800 pb-1">
-                    {paragraph.replace('### ', '')}
+                    {paragraph.replace(/^#{2,3}\s*/, '')}
                   </h4>
                 );
               }

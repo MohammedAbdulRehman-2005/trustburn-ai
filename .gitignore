@@ -42,6 +42,9 @@ frontend/node_modules/
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
-desktop.ini
 *.log
+.env
+.env.local
+.env.*.local
+!.env.example
+
