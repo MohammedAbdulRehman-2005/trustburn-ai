@@ -8,7 +8,8 @@ from backend.app.schemas.api_responses import (
     DatasetGenerateRequest,
     DatasetUploadResponse,
     ModelValidationResponse,
-    DemoScenario
+    DemoScenario,
+    GrokNarrativeRequest
 )
 from backend.app.schemas.burnin import ComponentTrajectory
 from backend.app.schemas.screening import EarlyForecast, AnomalyEvidence, ScreeningDecision, ShiftDiagnostic
@@ -157,6 +158,31 @@ def get_component_detail(component_id: str):
             "spec_upper_limit": traj.absolute_upper_limit
         }
     )
+
+
+@router.get("/explain/{component_id}")
+def get_component_explanation(component_id: str):
+    """Calculates and returns exact SHAP feature attributions for 168h drift prediction."""
+    try:
+        explanation = GLOBAL_STATE.explain_component(component_id)
+        return explanation
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Explanation calculation failed: {str(e)}")
+
+
+@router.post("/explain/{component_id}/grok-narrative")
+def get_grok_diagnostic_narrative(component_id: str, req: Optional[GrokNarrativeRequest] = None):
+    """Generates natural language QA diagnostic report using Grok LLM API (or physics engine fallback)."""
+    try:
+        user_key = req.api_key if req else None
+        narrative_result = GLOBAL_STATE.generate_grok_narrative(component_id, user_api_key=user_key)
+        return narrative_result
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Narrative generation failed: {str(e)}")
 
 
 @router.post("/datasets/generate")
@@ -377,6 +403,11 @@ def generate_component_report(component_id: str):
     sh = GLOBAL_STATE.shift_map.get(traj.lot_id)
     dec = GLOBAL_STATE.decision_map.get(component_id)
 
+    try:
+        xai_data = GLOBAL_STATE.explain_component(component_id)
+    except Exception:
+        xai_data = None
+
     return {
         "system": "TrustBurn AI — Screening & Risk Intelligence",
         "report_type": "COMPONENT_RISK_AUDIT_REPORT",
@@ -414,6 +445,7 @@ def generate_component_report(component_id: str):
             "mad_ratio": sh.mad_ratio if sh else None,
             "interpretation": sh.interpretation if sh else None
         },
+        "xai_explainability": xai_data,
         "provenance_and_audit": {
             "model_version": GLOBAL_STATE.forecaster.model_version,
             "data_seed": GLOBAL_STATE.active_seed,

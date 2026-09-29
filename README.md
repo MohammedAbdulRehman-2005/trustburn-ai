@@ -71,9 +71,12 @@ Conventional absolute limit screening misses two critical failure modes:
                                       ▼
   ┌────────────────────────────────────────────────────────────────────────┐
   │                      EXPLAIN & AUDIT PERSISTENCE                       │
+  │   • Exact Shapley Feature Attribution (Vectorized Pure-NumPy SHAP)    │
+  │   • Grok LLM Natural Language Diagnostic Explainer (api.x.ai/v1)       │
+  │   • Section 12 Diagnostic Authority Protocol (Levels 0–3 Grounded)    │
   │   • Persistent SQLite Run & Decision Storage (data/trustburn_audit.db) │
-  │   • Verification Action Recommender & QA Human Reviewer Notes          │
-  │   • Exportable Engineering QA Audit Reports & Retrospective Sandbox   │
+  │   • Cryptographic SHA-256 Tamper-Evident Hash Chain Audit Log          │
+  │   • Verification Action Recommender & Exportable Engineering QA Reports│
   └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -212,7 +215,7 @@ python -m pytest backend/tests/ -v
 
 Expected result:
 ```text
-======================== 29 passed, 1 warning in 5.10s ========================
+======================== 37 passed, 1 warning in 2.54s ========================
 ```
 
 ---
@@ -255,11 +258,18 @@ TrustBurn AI ships with guaranteed demonstration fixtures processed through the 
    * Observe the 90% Split Conformal prediction intervals ($85\%-95\%$ empirical coverage on in-distribution test lots).
    * Review the **Cross-Lot Distribution Shift Impact Experiment**: notice that when evaluating the shifted lot `LOT-2026-D-SHIFT`, empirical coverage drops. TrustBurn detects this shift via standardized median delta and scale ratios, automatically routing shifted components to **REVIEW**.
 
-5. **Step 5 — QA Decision Center & Audit Trail:**
+5. **Step 5 — Explainable AI (XAI) & Grok Natural Language Diagnostics:**
+   * Return to **Component Intelligence** or select `CMP-DEMO-WITHIN-SPEC`.
+   * Scroll to the **Explainable AI (XAI) & Diagnostic Intelligence** section.
+   * Inspect the **Shapley Value Feature Attributions Diverging Bar Chart**: see how the $+17.85\ \mu\text{A}$ Absolute Deviation Magnitude and $+9.98\ \mu\text{A}$ 24h Delta push the predicted drift higher toward spec breach.
+   * Observe the **Diagnostic Authority Level Hierarchy (Section 12.4)**: Level 0 (Direct Telemetry) → Level 1 (Statistical Evidence) → Level 2 (Failure Family) → Level 3 (Physical Mechanism Hypothesis) → Level 4 (Laboratory FA Sealed).
+   * Click **"Generate QA Explanation"**: Grok translates the mathematical attributions into an authoritative, 5-section diagnostic briefing for QA engineers (with automatic deterministic physics engine fallback if no `GROK_API_KEY` is present).
+
+6. **Step 6 — QA Decision Center & Cryptographic Audit Trail:**
    * Navigate to the **QA Decision Center** tab.
    * View flagged components with their deterministic reason codes and rule-based verification recommendations.
    * Enter a reviewer note (e.g., *"Inspected probe station calibration; held for precision parameter re-test"*). Click **"Save Notes"**.
-   * Click **"View Official Report"** to view and export the printable QA Audit Report with complete provenance.
+   * Click **"View Official Report"** to view and export the printable QA Audit Report with complete provenance, including the full SHAP explainability section.
 
 ---
 

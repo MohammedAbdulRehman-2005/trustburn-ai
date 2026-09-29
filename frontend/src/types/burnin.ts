@@ -232,3 +232,38 @@ export interface ModelValidationResponse {
   };
   honesty_disclaimer: string;
 }
+
+export interface ShapFeatureAttribution {
+  feature_name: string;
+  display_name: string;
+  category: string;
+  feature_value: number;
+  unit: string;
+  shap_value: number;
+  direction: 'RISK_ACCELERATOR' | 'PROTECTIVE' | 'NEUTRAL';
+  contribution_pct: number;
+}
+
+export interface ShapExplanation {
+  component_id: string;
+  lot_id: string;
+  predicted_168h: number;
+  base_value_168h: number;
+  total_drift_impact: number;
+  efficiency_verified: boolean;
+  attributions: ShapFeatureAttribution[];
+  top_risk_drivers: ShapFeatureAttribution[];
+  top_protective_factors: ShapFeatureAttribution[];
+}
+
+export interface GrokDiagnosticNarrative {
+  component_id: string;
+  narrative: string;
+  source: string;
+  model: string;
+  is_live_api: boolean;
+  diagnostic_authority_level: string;
+  tokens_used?: number;
+  fallback_reason?: string;
+}
+

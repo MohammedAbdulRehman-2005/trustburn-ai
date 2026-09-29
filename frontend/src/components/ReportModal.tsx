@@ -202,6 +202,55 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             </div>
           </div>
 
+          {/* Explainable AI (SHAP Feature Attributions) */}
+          {reportData.xai_explainability && (
+            <div className="p-4 rounded-lg bg-slate-900 border border-purple-900/40 space-y-2 text-xs print:bg-white print:border-slate-300">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-purple-300 block print:text-black">
+                  Explainable AI: Shapley Feature Attributions (XAI)
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  Efficiency: Σφᵢ = Δy
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-300 print:text-black">
+                Baseline (f₀): <strong>{reportData.xai_explainability.base_value_168h} µA</strong> | Net Drift Impact (Δy): <strong className="text-amber-400 print:text-black">{reportData.xai_explainability.total_drift_impact > 0 ? '+' : ''}{reportData.xai_explainability.total_drift_impact} µA</strong>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                <div className="p-2 rounded bg-slate-950/70 border border-slate-800 text-[11px] space-y-1 print:bg-slate-50 print:border-slate-200">
+                  <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wide block">
+                    Top Risk Drivers (+SHAP)
+                  </span>
+                  {reportData.xai_explainability.top_risk_drivers?.map((d: any) => (
+                    <div key={d.feature_name} className="flex justify-between font-mono">
+                      <span className="text-slate-300 print:text-black">{d.display_name}:</span>
+                      <span className="text-rose-400 font-bold print:text-black">+{d.shap_value} µA</span>
+                    </div>
+                  ))}
+                  {(!reportData.xai_explainability.top_risk_drivers || reportData.xai_explainability.top_risk_drivers.length === 0) && (
+                    <div className="text-slate-500 italic">None detected</div>
+                  )}
+                </div>
+
+                <div className="p-2 rounded bg-slate-950/70 border border-slate-800 text-[11px] space-y-1 print:bg-slate-50 print:border-slate-200">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide block">
+                    Top Protective Factors (-SHAP)
+                  </span>
+                  {reportData.xai_explainability.top_protective_factors?.map((p: any) => (
+                    <div key={p.feature_name} className="flex justify-between font-mono">
+                      <span className="text-slate-300 print:text-black">{p.display_name}:</span>
+                      <span className="text-emerald-400 font-bold print:text-black">{p.shap_value} µA</span>
+                    </div>
+                  ))}
+                  {(!reportData.xai_explainability.top_protective_factors || reportData.xai_explainability.top_protective_factors.length === 0) && (
+                    <div className="text-slate-500 italic">None detected</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Scientific Disclaimer */}
           <div className="p-3 bg-slate-950 border border-amber-500/30 rounded-lg text-[11px] text-slate-400 print:text-slate-600 print:border-slate-300 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />

@@ -9,7 +9,9 @@ import {
   DemoScenario,
   ModelValidationResponse,
   AuditRun,
-  ChainVerificationResponse
+  ChainVerificationResponse,
+  ShapExplanation,
+  GrokDiagnosticNarrative
 } from '../types/burnin';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
@@ -166,6 +168,22 @@ export const api = {
   async getComponentReport(componentId: string) {
     const res = await fetch(`${API_BASE}/reports/component/${encodeURIComponent(componentId)}`);
     if (!res.ok) throw new Error('Failed to generate report');
+    return res.json();
+  },
+
+  async getExplanation(componentId: string): Promise<ShapExplanation> {
+    const res = await fetch(`${API_BASE}/explain/${encodeURIComponent(componentId)}`);
+    if (!res.ok) throw new Error(`Failed to fetch SHAP explanation for ${componentId}`);
+    return res.json();
+  },
+
+  async getGrokNarrative(componentId: string, apiKey?: string): Promise<GrokDiagnosticNarrative> {
+    const res = await fetch(`${API_BASE}/explain/${encodeURIComponent(componentId)}/grok-narrative`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(apiKey ? { api_key: apiKey } : {})
+    });
+    if (!res.ok) throw new Error(`Failed to generate Grok diagnostic narrative for ${componentId}`);
     return res.json();
   }
 };

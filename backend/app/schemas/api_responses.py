@@ -77,3 +77,9 @@ class DemoScenario(BaseModel):
     lot_id: str
     demonstration_lesson: str
     expected_decision: str
+
+
+class GrokNarrativeRequest(BaseModel):
+    api_key: Optional[str] = None
+    model: Optional[str] = "grok-2-latest"
+

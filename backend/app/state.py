@@ -22,8 +22,10 @@ from backend.app.ml.anomaly_detector import AnomalyDetector
 from backend.app.ml.forecaster import DriftForecaster
 from backend.app.ml.conformal import SplitConformalCalibrator
 from backend.app.ml.shift_detector import DistributionShiftDetector
+from backend.app.ml.shap_explainer import ShapExplainer
 from backend.app.decision.engine import DecisionEngine
 from backend.app.audit.storage import AuditStore
+from backend.app.services.grok_service import GROK_SERVICE
 
 
 class SystemState:
@@ -36,6 +38,9 @@ class SystemState:
         self.conformal = SplitConformalCalibrator(alpha=0.10)
         self.shift_detector = DistributionShiftDetector()
         self.decision_engine = DecisionEngine()
+        self.shap_explainer: Optional[ShapExplainer] = None
+        self.shap_cache: Dict[str, Dict[str, Any]] = {}
+        self.grok_narrative_cache: Dict[str, Dict[str, Any]] = {}
 
         # In-memory working dataset
         self.records: List[MeasurementRecord] = []
@@ -103,6 +108,16 @@ class SystemState:
         # Fit supplementary Isolation Forest on early features
         self.anomaly_detector.fit_supplementary_model(X_train, seed=self.active_seed)
 
+        # Fit SHAP explainer on training distribution baseline
+        if self.forecaster.is_trained and self.forecaster.model is not None and len(X_train) > 0:
+            self.shap_explainer = ShapExplainer(
+                predict_fn=self.forecaster.model.predict,
+                baseline_sample=X_train,
+                feature_names=EARLY_FEATURE_NAMES
+            )
+            self.shap_cache.clear()
+            self.grok_narrative_cache.clear()
+
         # 4. Extract calibration split (LOT-2026-B) for conformal calibration
         cal_trajs = [t for t in self.trajectories if t.split_group == "CALIBRATION"]
         X_cal, y_cal, _ = extract_features_matrix(cal_trajs, self.lot_stats)
@@ -165,6 +180,8 @@ class SystemState:
         self.forecast_map.clear()
         self.shift_map.clear()
         self.decision_map.clear()
+        self.shap_cache.clear()
+        self.grok_narrative_cache.clear()
 
         # Pre-evaluate shift status for each lot
         unique_lots = list({t.lot_id for t in self.trajectories})
@@ -491,6 +508,75 @@ class SystemState:
                 "expected_decision": "HIGH RISK"
             }
         ]
+
+    def explain_component(self, component_id: str) -> Dict[str, Any]:
+        """Calculates or retrieves SHAP feature attributions for a given component."""
+        if component_id in self.shap_cache:
+            return self.shap_cache[component_id]
+
+        traj = next((t for t in self.trajectories if t.component_id == component_id), None)
+        if not traj:
+            raise KeyError(f"Component '{component_id}' not found in current dataset.")
+
+        lid = traj.lot_id
+        l_stats = self.lot_stats.get(lid, {"median_0h": 10.0, "median_24h": 10.2, "mad_24h": 1.2})
+        feats = build_early_features(
+            val_0h=traj.val_0h,
+            val_24h=traj.val_24h,
+            quality_0h=traj.quality_0h,
+            quality_24h=traj.quality_24h,
+            lot_context_0h_median=l_stats.get("median_0h", 10.0),
+            lot_context_24h_median=l_stats.get("median_24h", 10.2),
+            lot_context_24h_mad=l_stats.get("mad_24h", 1.2)
+        )
+
+        if not self.shap_explainer:
+            # Safe fallback if explainer not yet fitted
+            train_trajs = [t for t in self.trajectories if t.split_group == "TRAIN"]
+            X_train, _, _ = extract_features_matrix(train_trajs, self.lot_stats)
+            self.shap_explainer = ShapExplainer(
+                predict_fn=self.forecaster.model.predict if self.forecaster.model else lambda x: x[:, 1],
+                baseline_sample=X_train if len(X_train) > 0 else np.array([feats]),
+                feature_names=EARLY_FEATURE_NAMES
+            )
+
+        explanation = self.shap_explainer.explain_instance(feats, n_permutations=40, seed=self.active_seed)
+        explanation["component_id"] = component_id
+        explanation["lot_id"] = lid
+        self.shap_cache[component_id] = explanation
+        return explanation
+
+    def generate_grok_narrative(self, component_id: str, user_api_key: Optional[str] = None) -> Dict[str, Any]:
+        """Generates natural language QA diagnostic report using Grok LLM or physics engine."""
+        traj = next((t for t in self.trajectories if t.component_id == component_id), None)
+        if not traj:
+            raise KeyError(f"Component '{component_id}' not found.")
+
+        shap_exp = self.explain_component(component_id)
+        evidence = self.evidence_map.get(component_id)
+        forecast = self.forecast_map.get(component_id)
+        shift = self.shift_map.get(traj.lot_id)
+        decision = self.decision_map.get(component_id)
+
+        evidence_dict = evidence.model_dump() if hasattr(evidence, "model_dump") else (evidence.__dict__ if evidence else {})
+        forecast_dict = forecast.model_dump() if hasattr(forecast, "model_dump") else (forecast.__dict__ if forecast else {})
+        shift_dict = shift.model_dump() if hasattr(shift, "model_dump") else (shift.__dict__ if shift else {})
+        decision_dict = decision.model_dump() if hasattr(decision, "model_dump") else (decision.__dict__ if decision else {})
+        traj_dict = traj.model_dump() if hasattr(traj, "model_dump") else (traj.__dict__ if traj else {})
+
+        result = GROK_SERVICE.generate_diagnostic_narrative(
+            component_id=component_id,
+            lot_id=traj.lot_id,
+            trajectory_data=traj_dict,
+            evidence_data=evidence_dict,
+            forecast_data=forecast_dict,
+            shift_data=shift_dict,
+            decision_data=decision_dict,
+            shap_data=shap_exp,
+            user_api_key=user_api_key
+        )
+        self.grok_narrative_cache[component_id] = result
+        return result
 
 
 # Singleton global instance

@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import { api, ComponentDetailPayload } from '../api/client';
 import { ReportModal } from '../components/ReportModal';
+import { ExplainableAISection } from '../components/ExplainableAISection';
 
 interface ComponentIntelligencePageProps {
   selectedComponentId: string;
@@ -444,6 +445,9 @@ export const ComponentIntelligencePage: React.FC<ComponentIntelligencePageProps>
           </div>
         </div>
       </div>
+
+      {/* Explainable AI (XAI) & Grok Diagnostic Intelligence */}
+      <ExplainableAISection componentId={selectedComponentId} />
 
       {/* Multi-Stream Evidence Contributions Breakdown Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
