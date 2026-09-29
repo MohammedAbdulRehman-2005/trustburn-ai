@@ -27,6 +27,8 @@ interface HeaderProps {
   onResetDemo: () => void;
   backendOnline: boolean;
   activeSeed: number;
+  isConnecting?: boolean;
+  elapsedSeconds?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({
   onResetDemo,
   backendOnline,
   activeSeed,
+  isConnecting = false,
+  elapsedSeconds = 0,
 }) => {
   return (
     <header className="bg-slate-950 border-b border-slate-800 text-slate-100 sticky top-0 z-30 shadow-lg">
@@ -126,11 +130,27 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800">
             <span
               className={`w-2 h-2 rounded-full ${
-                backendOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
+                backendOnline
+                  ? 'bg-emerald-400 animate-pulse'
+                  : isConnecting
+                  ? 'bg-amber-400 animate-ping'
+                  : 'bg-rose-500'
               }`}
             />
-            <span className="text-[11px] font-mono text-slate-400 hidden xl:inline">
-              {backendOnline ? 'BACKEND READY' : 'OFFLINE'}
+            <span
+              className={`text-[11px] font-mono hidden xl:inline ${
+                backendOnline
+                  ? 'text-emerald-400'
+                  : isConnecting
+                  ? 'text-amber-400'
+                  : 'text-slate-400'
+              }`}
+            >
+              {backendOnline
+                ? 'BACKEND READY'
+                : isConnecting
+                ? `WAKING UP (${elapsedSeconds}s)`
+                : 'OFFLINE'}
             </span>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DisclaimerBanner } from './components/DisclaimerBanner';
+import { BackendColdStartBanner } from './components/BackendColdStartBanner';
 import { Header } from './components/Header';
 import { OverviewPage } from './pages/OverviewPage';
 import { ExplorerPage } from './pages/ExplorerPage';
@@ -22,28 +23,79 @@ export const App: React.FC = () => {
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [scenarios, setScenarios] = useState<DemoScenario[]>([]);
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
+  const [isConnecting, setIsConnecting] = useState<boolean>(true);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [justConnected, setJustConnected] = useState<boolean>(false);
 
   // Modals
   const [isGuidedDemoOpen, setIsGuidedDemoOpen] = useState<boolean>(false);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [isRegenerateOpen, setIsRegenerateOpen] = useState<boolean>(false);
 
-  const loadInitialData = async () => {
+  // 1. Elapsed timer for cold start
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    if (!backendOnline) {
+      timer = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [backendOnline]);
+
+  // 2. Health check and data loader
+  const checkHealthAndLoad = async (): Promise<boolean> => {
+    setIsConnecting(true);
     try {
       const health = await api.getHealth();
-      setBackendOnline(health.status === 'healthy');
-      const ov = await api.getOverview();
-      setStats(ov);
-      const sc = await api.getScenarios();
-      setScenarios(sc);
-    } catch (err) {
-      console.error('Failed to connect to TrustBurn AI backend:', err);
+      if (health && health.status === 'healthy') {
+        setBackendOnline(true);
+        setIsConnecting(false);
+        setJustConnected(true);
+
+        const [ov, sc] = await Promise.all([
+          api.getOverview().catch(() => null),
+          api.getScenarios().catch(() => [])
+        ]);
+
+        if (ov) setStats(ov);
+        if (sc && sc.length > 0) setScenarios(sc);
+
+        // Auto-dismiss the success badge after 5s
+        setTimeout(() => {
+          setJustConnected(false);
+        }, 5000);
+
+        return true;
+      }
+    } catch {
       setBackendOnline(false);
+    } finally {
+      setIsConnecting(false);
     }
+    return false;
   };
 
+  // 3. Continuous polling loop until backend responds
   useEffect(() => {
-    loadInitialData();
+    let active = true;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async () => {
+      const success = await checkHealthAndLoad();
+      if (!success && active) {
+        timeoutId = setTimeout(poll, 3000);
+      }
+    };
+
+    poll();
+
+    return () => {
+      active = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const handleSelectScenario = (scenarioId: string) => {
@@ -71,7 +123,7 @@ export const App: React.FC = () => {
   const handleResetDemo = async () => {
     try {
       await api.generateDataset(42, 800);
-      await loadInitialData();
+      await checkHealthAndLoad();
       setSelectedComponentId('CMP-DEMO-WITHIN-SPEC');
       setSelectedScenarioId('SCENARIO_A_WITHIN_SPEC');
       setActiveTab('overview');
@@ -90,6 +142,16 @@ export const App: React.FC = () => {
       {/* 1. Visible Non-Negotiable Disclaimer Banner */}
       <DisclaimerBanner />
 
+      {/* 1.5. Cold Start / Waking Up Banner for Evaluators & Judges */}
+      <BackendColdStartBanner
+        backendOnline={backendOnline}
+        isConnecting={isConnecting}
+        elapsedSeconds={elapsedSeconds}
+        justConnected={justConnected}
+        onRetry={checkHealthAndLoad}
+        onDismissJustConnected={() => setJustConnected(false)}
+      />
+
       {/* 2. Top Navigation & Brand Header */}
       <Header
         activeTab={activeTab}
@@ -103,6 +165,8 @@ export const App: React.FC = () => {
         onResetDemo={handleResetDemo}
         backendOnline={backendOnline}
         activeSeed={stats?.active_seed ?? 42}
+        isConnecting={isConnecting}
+        elapsedSeconds={elapsedSeconds}
       />
 
       {/* 3. Main Content Container */}
@@ -171,7 +235,7 @@ export const App: React.FC = () => {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onUploadSuccess={() => {
-          loadInitialData();
+          checkHealthAndLoad();
           setIsUploadOpen(false);
           setActiveTab('explorer');
         }}
@@ -182,7 +246,7 @@ export const App: React.FC = () => {
         onClose={() => setIsRegenerateOpen(false)}
         currentSeed={stats?.active_seed ?? 42}
         onRegenerateSuccess={() => {
-          loadInitialData();
+          checkHealthAndLoad();
           setActiveTab('overview');
         }}
       />
