@@ -271,7 +271,7 @@ export const EarlyWarningLabPage: React.FC<EarlyWarningLabPageProps> = ({
                     Retrospective Evaluation Gate (Held-Out Data)
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Reveal the actual physical measurement recorded at 96h and 168h. The early prediction was already frozen above.
+                    Reveal the held-out benchmark measurement recorded at 96h and 168h. The early prediction was already frozen above.
                   </p>
                 </div>
 
@@ -301,7 +301,7 @@ export const EarlyWarningLabPage: React.FC<EarlyWarningLabPageProps> = ({
                     </div>
 
                     <div className="p-2.5 bg-slate-950 rounded border border-slate-800">
-                      <span className="text-slate-400 block text-[10px] uppercase">Actual 168h Measured</span>
+                      <span className="text-slate-400 block text-[10px] uppercase">Held-Out 168h Outcome</span>
                       <span className="text-white font-bold text-sm">{heldOutResult.actual_168h} µA</span>
                     </div>
 
@@ -324,7 +324,7 @@ export const EarlyWarningLabPage: React.FC<EarlyWarningLabPageProps> = ({
                     {heldOutResult.actual_crossed_spec_limit ? (
                       <p className="text-rose-400 font-semibold flex items-center gap-1.5">
                         <AlertTriangle className="w-4 h-4 shrink-0" />
-                        Component physical measurement breached the 50.0 µA absolute specification limit at 168h ({heldOutResult.actual_168h} µA). The 24h early warning successfully identified this risk!
+                        The held-out benchmark outcome is now revealed. On this controlled scenario, it confirms the direction of the early warning: component reached {heldOutResult.actual_168h} µA at 168h (exceeding 50.0 µA spec).
                       </p>
                     ) : (
                       <p className="text-emerald-400 font-semibold flex items-center gap-1.5">

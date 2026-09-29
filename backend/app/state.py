@@ -303,6 +303,60 @@ class SystemState:
         )
         self.audit_store.log_run(run_record, audit_decisions)
 
+        # Dynamically compute confusion matrix and defect escape metrics on held-out test split (LOT-2026-C)
+        test_cids = [t.component_id for t in self.trajectories if t.split_group == "TEST"]
+        tp, fp, tn, fn = 0, 0, 0, 0
+        conv_escapes = 0
+        for cid in test_cids:
+            t = next((tr for tr in self.trajectories if tr.component_id == cid), None)
+            if not t:
+                continue
+            dec = self.decision_map.get(cid)
+            is_defect = (t.val_168h is not None and t.val_168h > 50.0) or (t.synthetic_ground_truth in [
+                "GRADUAL_LATENT_DEGRADATION", "ABRUPT_LATE_BREAKDOWN",
+                "LATENT_GATE_OXIDE_CONTAMINATION", "THERMAL_ELECTROMIGRATION_ACCELERATION",
+                "CATASTROPHIC_DIE_ATTACH_VOID", "ELEVATED_WITHIN_SPEC_OUTLIER"
+            ])
+            is_flagged = dec is not None and dec.decision in ["REVIEW", "HIGH RISK"]
+            conv_pass = (t.val_24h is not None and t.val_24h <= 50.0)
+
+            if is_defect and is_flagged:
+                tp += 1
+            elif not is_defect and is_flagged:
+                fp += 1
+            elif not is_defect and not is_flagged:
+                tn += 1
+            elif is_defect and not is_flagged:
+                fn += 1
+
+            if conv_pass and is_defect:
+                conv_escapes += 1
+
+        precision = round(tp / max(tp + fp, 1), 3)
+        recall = round(tp / max(tp + fn, 1), 3)
+        f1 = round(2 * precision * recall / max(precision + recall, 1e-6), 3)
+        fnr = round(fn / max(tp + fn, 1), 3)
+        escape_red_pct = round(((conv_escapes - fn) / max(conv_escapes, 1)) * 100, 1)
+
+        if self.validation_metrics:
+            self.validation_metrics["confusion_matrix"] = {
+                "true_positive": tp,
+                "false_positive": fp,
+                "true_negative": tn,
+                "false_negative": fn
+            }
+            self.validation_metrics["classification_metrics"] = {
+                "precision": precision,
+                "recall": recall,
+                "f1_score": f1,
+                "false_negative_rate": fnr
+            }
+            self.validation_metrics["defect_escape_comparison"] = {
+                "conventional_escapes": conv_escapes,
+                "trustburn_escapes": fn,
+                "escape_reduction_pct": escape_red_pct
+            }
+
     def get_overview_statistics(self) -> Dict[str, Any]:
         """Aggregates overview dashboard metrics from live backend calculations."""
         total = len(self.trajectories)
@@ -366,7 +420,7 @@ class SystemState:
             "trustburn_escapes": tb_escapes,
             "escape_reduction_pct": escape_red,
             "early_warning_opportunity_count": early_warn_opp,
-            "description": "Conventional static screening misses within-spec degradation at 24h; TrustBurn AI reduces defect escapes."
+            "description": "Conventional static screening misses within-spec degradation at 24h; TrustBurn AI reduces defect escapes on this controlled benchmark."
         }
 
         return {
@@ -394,7 +448,7 @@ class SystemState:
             {
                 "scenario_id": "SCENARIO_A_WITHIN_SPEC",
                 "title": "A. Hidden Within-Spec Anomaly",
-                "description": "Component operates at 45.1 µA against 50.0 µA upper limit. Conventional screening passes it; TrustBurn's robust lot-relative MAD engine flags severe anomaly (Robust Z-score: 28.6).",
+                "description": "Component operates at 45.1 µA against 50.0 µA upper limit. Conventional screening passes it; TrustBurn's robust lot-relative MAD engine flags severe anomaly (Robust Z-score indicates extreme outlier status relative to lot median).",
                 "component_id": "CMP-DEMO-WITHIN-SPEC",
                 "lot_id": "LOT-2026-C",
                 "demonstration_lesson": "Static Absolute PASS (45.1 <= 50.0 µA) vs Dynamic Lot-Relative Anomaly.",
@@ -403,7 +457,7 @@ class SystemState:
             {
                 "scenario_id": "SCENARIO_B_EARLY_DRIFT",
                 "title": "B. Early Drift Warning",
-                "description": "Steep 0h->24h slope (+0.429 µA/h) forecasts 168h spec violation (predicted ~58.5 µA). Held-out benchmark outcome confirms physical breach (62.1 µA).",
+                "description": "Steep 0h->24h slope forecasts 168h spec violation (predicted ~58.5 µA). Held-out benchmark outcome confirms risk direction (62.1 µA).",
                 "component_id": "CMP-DEMO-EARLY-DRIFT",
                 "lot_id": "LOT-2026-C",
                 "demonstration_lesson": "Early 24h drift prediction with held-out verification.",
@@ -430,10 +484,10 @@ class SystemState:
             {
                 "scenario_id": "SCENARIO_E_HIGH_RISK",
                 "title": "E. High-Risk Multi-Signal Breach",
-                "description": "Severe early breach at 24h (52.4 µA > 50.0 µA spec) coupled with rapid accelerating drift and extreme lot outlier score. System triggers immediate quarantine.",
+                "description": "Severe early breach at 24h (52.4 µA > 50.0 µA spec) coupled with rapid accelerating drift and extreme lot outlier score. System routes component for engineering disposition.",
                 "component_id": "CMP-DEMO-HIGHRISK",
                 "lot_id": "LOT-2026-C",
-                "demonstration_lesson": "Multi-signal breach triggering immediate quarantine action.",
+                "demonstration_lesson": "Multi-signal breach triggering engineering disposition routing.",
                 "expected_decision": "HIGH RISK"
             }
         ]

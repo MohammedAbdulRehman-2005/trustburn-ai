@@ -109,6 +109,10 @@ export const ComponentIntelligencePage: React.FC<ComponentIntelligencePageProps>
       hourLabel: '24h',
       observed: trajectory.val_24h,
       forecast: trajectory.val_24h,
+      conformalBand: [
+        forecast?.conformal_lower_bound ?? trajectory.val_24h,
+        forecast?.conformal_upper_bound ?? trajectory.val_24h
+      ],
       lowerConformal: forecast?.conformal_lower_bound,
       upperConformal: forecast?.conformal_upper_bound,
       baselineLot: historical_context.lot_median_24h,
@@ -126,6 +130,10 @@ export const ComponentIntelligencePage: React.FC<ComponentIntelligencePageProps>
       hourLabel: '168h',
       observed: trajectory.val_168h,
       forecast: forecast?.predicted_168h,
+      conformalBand: [
+        forecast?.conformal_lower_bound,
+        forecast?.conformal_upper_bound
+      ],
       lowerConformal: forecast?.conformal_lower_bound,
       upperConformal: forecast?.conformal_upper_bound,
       baselineLot: historical_context.lot_median_24h,
@@ -383,6 +391,26 @@ export const ComponentIntelligencePage: React.FC<ComponentIntelligencePageProps>
                   label={{ value: `Lot Median (${historical_context.lot_median_24h} µA)`, fill: '#10b981', fontSize: 10, position: 'bottom' }}
                 />
               )}
+
+              {/* Vertical 24h Temporal Boundary */}
+              <ReferenceLine
+                x="24h"
+                stroke="#64748b"
+                strokeDasharray="3 3"
+                label={{ value: '24h Early Boundary', fill: '#94a3b8', fontSize: 10, position: 'insideTopLeft' }}
+              />
+
+              {/* Shaded 90% Conformal Prediction Interval Band */}
+              <Area
+                type="linear"
+                dataKey="conformalBand"
+                stroke="#f59e0b"
+                strokeDasharray="2 2"
+                strokeOpacity={0.5}
+                fill="#f59e0b"
+                fillOpacity={0.12}
+                name="90% Conformal Interval"
+              />
 
               {/* Observed measurements line */}
               <Line

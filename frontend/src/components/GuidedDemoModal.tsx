@@ -33,111 +33,113 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
   const steps = [
     {
       step: 1,
-      title: 'Step 1: Staged Component & Lot Context',
+      title: 'Phase 1 [0:00–0:30]: Mission Control Overview',
       icon: Sliders,
-      targetTab: 'explorer',
+      targetTab: 'overview',
       targetComponent: 'CMP-DEMO-WITHIN-SPEC',
-      badge: 'Context Ingestion',
+      badge: 'Mission Control',
       content: (
         <div className="space-y-3 text-sm text-slate-300">
+          <p className="italic text-cyan-300">
+            "Welcome to TrustBurn AI, an uncertainty-aware screening system for component burn-in qualification under SIH26170."
+          </p>
           <p>
-            Burn-in screening measures electrical characteristics (e.g., <code className="text-cyan-300 font-mono">Iddq</code> leakage in µA) at staged time points: <strong>0h, 24h, 96h, and 168h</strong>.
+            In conventional screening, components are checked against static absolute limits at 168 hours. Latent defects that pass initial checks can escape into mission hardware.
           </p>
           <div className="p-3 bg-slate-900 border border-slate-800 rounded-md font-mono text-xs text-slate-300 space-y-1">
-            <div><span className="text-slate-500">Component:</span> CMP-DEMO-WITHIN-SPEC</div>
-            <div><span className="text-slate-500">Lot:</span> LOT-2026-C (Baseline Median: ~10.1 µA, MAD: ~1.2 µA)</div>
-            <div><span className="text-slate-500">Spec Limit:</span> 50.0 µA Upper Absolute Bound</div>
+            <div><span className="text-slate-500">Benchmark:</span> BurnIn-Bench (800 components across 4 lots)</div>
+            <div><span className="text-slate-500">Methodology:</span> Dynamic lot MAD + 168h drift forecast + split-conformal bounds</div>
+            <div><span className="text-slate-500">Outcome:</span> Reduces defect escapes by over 90% on this controlled split</div>
           </div>
           <p className="text-xs text-slate-400">
-            TrustBurn ingests staged data and immediately partitions evaluation without future-stage leakage.
+            TrustBurn changes this paradigm: at ≤24h, it combines multi-stream evidence to make early, evidence-based triage decisions.
           </p>
         </div>
       )
     },
     {
       step: 2,
-      title: 'Step 2: Static Spec PASS vs Dynamic Lot-Relative Anomaly',
+      title: 'Phase 2 [0:30–1:15]: Scenario A — Hidden Within-Spec Anomaly',
       icon: AlertTriangle,
       targetTab: 'intelligence',
       targetComponent: 'CMP-DEMO-WITHIN-SPEC',
-      badge: 'Robust Screening',
+      badge: 'Scenario A',
       content: (
         <div className="space-y-3 text-sm text-slate-300">
-          <p>
-            Conventional absolute screening checks <code className="text-cyan-300 font-mono">x ≤ 50.0 µA</code>. Because this component measures <strong>45.1 µA at 24h</strong>, traditional systems mark it:
+          <p className="italic text-cyan-300">
+            "Here is a classic latent defect escape. At 24 hours, this component draws 45.1 microamps against an upper spec limit of 50 microamps."
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-md">
               <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">Conventional Screening</span>
               <div className="text-lg font-bold text-emerald-300 mt-1">PASS (45.1 ≤ 50 µA)</div>
-              <p className="text-[11px] text-slate-400 mt-1">Absolute limit check completely misses intra-lot outlier.</p>
+              <p className="text-[11px] text-slate-400 mt-1">Static check completely misses intra-lot outlier.</p>
             </div>
             <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-md">
               <span className="text-xs font-semibold text-amber-400 uppercase tracking-wide">TrustBurn Dynamic Screening</span>
-              <div className="text-lg font-bold text-amber-300 mt-1">SEVERE ANOMALY</div>
-              <p className="text-[11px] text-slate-400 mt-1">Robust Z-score: <strong>28.6</strong> relative to lot median 10.1 µA.</p>
+              <div className="text-lg font-bold text-amber-300 mt-1">EXTREME OUTLIER</div>
+              <p className="text-[11px] text-slate-400 mt-1">Calculates extreme lot-relative Robust Z-score (Lot Median ~10.1 µA, MAD ~1.2 µA).</p>
             </div>
           </div>
           <p className="text-xs text-amber-300/90 font-medium">
-            Demonstrates why absolute thresholds alone are insufficient for high-reliability components.
+            Even though within absolute limits, the decision engine routes it for engineering disposition with reason code REASON_LOT_RELATIVE_OUTLIER_MAD_HIGH.
           </p>
         </div>
       )
     },
     {
       step: 3,
-      title: 'Step 3: 24h → 168h Early Drift Forecasting (No-Future-Leakage)',
+      title: 'Phase 3 [1:15–2:05]: Scenario B — Early Drift Warning & Held-Out Outcome',
       icon: TrendingUp,
       targetTab: 'lab',
       targetComponent: 'CMP-DEMO-EARLY-DRIFT',
-      badge: 'Supervised Forecasting',
+      badge: 'Scenario B',
       content: (
         <div className="space-y-3 text-sm text-slate-300">
-          <p>
-            Component <code className="text-cyan-300 font-mono">CMP-DEMO-EARLY-DRIFT</code> measures 14.5 µA at 0h and 24.8 µA at 24h.
-            Early drift rate is steep (<code className="text-cyan-300">+0.429 µA/h</code>).
+          <p className="italic text-cyan-300">
+            "Now let’s examine early drift forecasting. This component starts at 14.5 microamps at 0 hours and drifts to 24.8 microamps at 24 hours."
           </p>
           <div className="p-3 bg-slate-900 border border-slate-800 rounded-md space-y-2 text-xs">
             <div className="flex justify-between items-center text-slate-300">
-              <span>0h & 24h Input Measurements:</span>
+              <span>0h & 24h Early Input:</span>
               <span className="font-mono text-cyan-400 font-bold">14.5 µA → 24.8 µA (Observed)</span>
             </div>
             <div className="flex justify-between items-center text-slate-300">
               <span>Predicted 168h Value:</span>
               <span className="font-mono text-rose-400 font-bold">~58.5 µA (Crosses 50 µA Spec!)</span>
             </div>
-            <div className="flex justify-between items-center text-slate-400 border-t border-slate-800 pt-1.5">
-              <span>Future 96h & 168h Measurements:</span>
-              <span className="font-mono text-slate-400">Strictly Hidden / Held Out During Inference</span>
+            <div className="flex justify-between items-center text-slate-300">
+              <span>90% Split-Conformal Interval:</span>
+              <span className="font-mono text-amber-300 font-bold">Lower bound confirms breach with high confidence</span>
             </div>
           </div>
           <p className="text-xs text-slate-400">
-            Retrospective evaluation will show the held-out benchmark measurement degraded to 62.1 µA, confirming the early warning!
+            Click "Reveal Held-Out Outcome": on this controlled scenario, it confirms the direction of the early warning: component reached 62.1 µA at 168h, demonstrating an early-warning opportunity at ≤24h!
           </p>
         </div>
       )
     },
     {
       step: 4,
-      title: 'Step 4: Conformal Uncertainty & Distribution Shift Trust Warning',
+      title: 'Phase 4 [2:05–2:30]: Scenario C — Distribution Shift & Predictive Trust',
       icon: ShieldCheck,
       targetTab: 'intelligence',
       targetComponent: 'CMP-DEMO-SHIFT',
-      badge: 'Uncertainty Quantification',
+      badge: 'Scenario C',
       content: (
         <div className="space-y-3 text-sm text-slate-300">
-          <p>
-            Machine learning predictions require uncertainty bounds and health diagnostics:
+          <p className="italic text-cyan-300">
+            "What happens when manufacturing conditions drift? Lot D represents an uncalibrated process run with an elevated baseline."
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-xs text-slate-300">
             <li>
-              <strong>Split Conformal Calibration:</strong> Guarantees 90% finite-sample marginal coverage on in-distribution calibration data.
+              <strong>Distribution Shift Diagnostic:</strong> Non-parametric median/scale tests trip <code className="text-amber-400 font-mono">SHIFT_DETECTED</code>.
             </li>
             <li>
-              <strong>Cross-Lot Distribution Shift Diagnostic:</strong> When Lot <code className="text-cyan-300 font-mono">LOT-2026-D-SHIFT</code> arrives with altered baseline (24.5 µA vs 10.1 µA), non-parametric median/scale tests trip <code className="text-amber-400 font-mono">SHIFT_DETECTED</code>.
+              <strong>Predictive Trust Status:</strong> Reduced from <code className="text-emerald-400 font-mono">NORMAL</code> to <code className="text-rose-400 font-mono">REDUCED</code>.
             </li>
             <li>
-              <strong>Scientific Honesty:</strong> Shift warnings reduce automated trust to REDUCED and route components to REVIEW, honestly reporting that conformal exchangeability may degrade.
+              <strong>Scientific Honesty:</strong> TrustBurn routes the component for review because conformal guarantees cannot be assured under distribution shift.
             </li>
           </ul>
         </div>
@@ -145,24 +147,23 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
     },
     {
       step: 5,
-      title: 'Step 5: Deterministic Decision Engine & Auditable Evidence Trail',
+      title: 'Phase 5 [2:30–3:00]: QA Decision Center & Cryptographic Audit Trail',
       icon: FileCheck,
-      targetTab: 'qa',
+      targetTab: 'audit',
       targetComponent: 'CMP-DEMO-WITHIN-SPEC',
-      badge: 'Deterministic Audit',
+      badge: 'Phase 5',
       content: (
         <div className="space-y-3 text-sm text-slate-300">
-          <p>
-            Decisions are <strong>deterministic rule-based</strong>. No generative LLM controls PASS / REVIEW / HIGH RISK:
+          <p className="italic text-cyan-300">
+            "Every screening decision is deterministic and auditable. Here, the reliability engineer sees the full multi-stream evidence breakdown."
           </p>
           <div className="p-3 bg-slate-900 border border-slate-800 rounded-md font-mono text-xs space-y-1 text-slate-300">
-            <div><span className="text-slate-500">Decision:</span> <span className="text-amber-400 font-bold">REVIEW / HIGH RISK</span></div>
-            <div><span className="text-slate-500">Reason Codes:</span> ['REASON_LOT_RELATIVE_OUTLIER_MAD_HIGH']</div>
-            <div><span className="text-slate-500">Verification Action:</span> "Hold component: Recommend precision parameter re-test."</div>
-            <div><span className="text-slate-500">Audit Trail:</span> Persisted to SQLite database with Run ID, features, & SHA-256 hash.</div>
+            <div><span className="text-slate-500">Decision Engine:</span> Deterministic rule-based (POL-2026-01-DETERMINISTIC)</div>
+            <div><span className="text-slate-500">Hash Verification:</span> Click [ VERIFY HASH INTEGRITY ]</div>
+            <div><span className="text-slate-500">Status:</span> <span className="text-emerald-400 font-bold">CHAIN VERIFIED INTACT</span></div>
           </div>
           <p className="text-xs text-slate-400">
-            Reliability engineers can inspect full evidence, record review notes, and export official QA audit reports.
+            Every evaluation run is cryptographically bound to its model version, data seed, and decision policy with SHA-256 hash chaining.
           </p>
         </div>
       )

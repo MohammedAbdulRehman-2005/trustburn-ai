@@ -156,7 +156,7 @@ def validate_and_parse_csv(
                 try:
                     v = float(row["measured_value"])
                     if v < 0:
-                        issues.append(f"Negative physical measurement {v} for component {cid} at {hr}h.")
+                        issues.append(f"Negative parameter measurement {v} for component {cid} at {hr}h.")
                 except Exception:
                     v = None
                     issues.append(f"Non-numeric measurement for component {cid} at {hr}h.")

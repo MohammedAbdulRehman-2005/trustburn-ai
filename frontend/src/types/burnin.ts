@@ -225,5 +225,10 @@ export interface ModelValidationResponse {
     f1_score: number;
     false_negative_rate: number;
   };
+  defect_escape_comparison?: {
+    conventional_escapes: number;
+    trustburn_escapes: number;
+    escape_reduction_pct: number;
+  };
   honesty_disclaimer: string;
 }

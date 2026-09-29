@@ -27,7 +27,7 @@ This software is an **academic research and demonstration prototype using strict
 During semiconductor burn-in (typically performed at 125°C under accelerated electrical stress across 0h, 24h, 96h, and 168h stages), conventional screening verifies only whether electrical measurements satisfy static specification bounds ($x \le \text{SpecLimit}$).
 
 Conventional absolute limit screening misses two critical failure modes:
-1. **Intra-Lot Latent Anomalies:** A component exhibiting $45.1\ \mu\text{A}$ leakage current passes a $50.0\ \mu\text{A}$ absolute specification, even if its manufacturing lot exhibits a baseline center of $\approx 10.1\ \mu\text{A}$. Relative to its peers, this component is an extreme outlier ($19.7\times$ MAD sigmas).
+1. **Intra-Lot Latent Anomalies:** A component exhibiting $45.1\ \mu\text{A}$ leakage current passes a $50.0\ \mu\text{A}$ absolute specification, even if its manufacturing lot exhibits a baseline center of $\approx 10.1\ \mu\text{A}$. Relative to its peers, this component is an extreme outlier (extreme lot-relative Robust Z-score).
 2. **Accelerating Drift Failure:** A component starting at $14.5\ \mu\text{A}$ at 0h and rising to $24.8\ \mu\text{A}$ at 24h is well within spec at 24h, but its drift velocity ($+0.429\ \mu\text{A/h}$) forecasts an absolute specification breach before the 168h qualification target.
 
 **TrustBurn AI** resolves both failure modes using an uncertainty-aware, auditable, multi-evidence screening pipeline.
@@ -263,23 +263,38 @@ TrustBurn AI ships with guaranteed demonstration fixtures processed through the 
 
 ---
 
-## 9. Screen-Recording Narration Script (90–120 Seconds)
+## 9. Screen-Recording Narration Script (3 Minutes)
 
 *(Speaking at a steady, professional engineering pace)*
 
-> "Welcome to TrustBurn AI: Uncertainty-Aware Early Warning and Risk Intelligence for Component Burn-In, developed for Smart India Hackathon 2026 Problem Statement SIH26170.
+> **[0:00 - 0:30] MISSION CONTROL OVERVIEW**
+> "Welcome to TrustBurn AI, an uncertainty-aware screening system for component burn-in qualification under SIH26170.
+> In conventional screening, components are checked against static absolute limits at 168 hours. Latent defects that pass initial checks can escape into mission hardware.
+> TrustBurn changes this paradigm: at the 24-hour mark, it combines robust lot-relative anomaly detection, early drift forecasting, and split-conformal uncertainty intervals to make early, evidence-based triage decisions.
+> On this controlled BurnIn-Bench dataset of 800 components across 4 lots, static screening escaped 28 defects. TrustBurn reduces this escape rate by over 90% on this controlled split while routing ambiguous cases for review."
 >
-> In aerospace qualification, electrical burn-in measurements are collected at 0h, 24h, 96h, and 168h. Conventional screening only checks if a measurement is below a fixed limit. But consider this real component in our console: Component DEMO-WITHIN-SPEC measures 45.1 microamps at 24 hours against a 50 microamp specification. Conventional screening gives it a pass. 
+> **[0:30 - 1:15] SCENARIO A: HIDDEN WITHIN-SPEC ANOMALY (CMP-DEMO-WITHIN-SPEC)**
+> "Here is a classic latent defect escape. At 24 hours, this component draws 45.1 microamps against an upper spec limit of 50 microamps.
+> Conventional screening marks this PASS — it is within spec. But look at the lot context: the median leakage for Lot C is approximately 10.1 microamps with a MAD of 1.2 microamps.
+> TrustBurn calculates an extreme lot-relative Robust Z-score. This component is not normal for its manufacturing lot. Even though it is within absolute limits, the decision engine routes it for engineering review with reason code REASON_LOT_RELATIVE_OUTLIER_MAD_HIGH.
+> This is a defect escape that conventional static screening would never catch."
 >
-> However, its manufacturing lot has a median of 10.1 microamps and a MAD of 1.2 microamps. Relative to its lot, this part is an extreme nineteen-sigma outlier. TrustBurn’s robust peer-relative engine detects this latent defect and flags it for engineering review.
+> **[1:15 - 2:05] SCENARIO B: EARLY DRIFT WARNING & HELD-OUT OUTCOME (CMP-DEMO-EARLY-DRIFT)**
+> "Now let’s examine early drift forecasting. This component starts at 14.5 microamps at 0 hours and drifts to 24.8 microamps at 24 hours.
+> Using strictly less than or equal to 24-hour measurements, our supervised gradient boosted regressor projects the 168-hour endpoint at approximately 58.5 microamps — well beyond the 50 microamp specification limit.
+> TrustBurn does not just give a point forecast; it provides a 90% split-conformal prediction interval. The lower bound confirms the trajectory is crossing the limit with high confidence.
+> Now let us reveal the held-out benchmark outcome: the actual 168-hour measurement reached 62.1 microamps. On this controlled scenario, it confirms the direction of the early warning, demonstrating an opportunity to identify risk at 24 hours instead of waiting 168 hours."
 >
-> Next, let’s enter the Early Warning Lab. By analyzing only the measurements available at zero and twenty-four hours, our supervised gradient boosting regressor projects the 168-hour measurement without using any post-24-hour information. For Component DEMO-EARLY-DRIFT, the early slope forecasts a breach at 58.5 microamps. When we reveal the held-out outcome, the physical measurement actually reached 62.1 microamps—confirming that early intervention could save 144 hours of test chamber time.
+> **[2:05 - 2:30] SCENARIO C: DISTRIBUTION SHIFT & PREDICTIVE TRUST (CMP-DEMO-SHIFT)**
+> "What happens when manufacturing conditions drift? Lot D represents an uncalibrated process run with an elevated baseline.
+> TrustBurn does not blindly trust its models. The non-parametric distribution shift detector flags this lot, reducing model trust status from NORMAL to REDUCED.
+> The decision engine immediately flags the shift, routing the component for review because conformal guarantees cannot be assured under distribution shift. This illustrates scientific honesty in automated screening."
 >
-> Crucially, machine learning requires honest uncertainty. TrustBurn pairs point predictions with ninety-percent split conformal prediction intervals. Furthermore, when an incoming production lot exhibits baseline shift, our distribution shift diagnostic detects the altered statistics and issues an automated trust warning.
->
-> Finally, in the QA Decision Center, every screening recommendation is one hundred percent deterministic, justified by transparent reason codes, actionable verification recommendations, and an immutable SQLite audit trail.
->
-> Every burn-in trajectory becomes an evidence opportunity — TrustBurn determines what can be trusted, what remains uncertain, and what should be verified next."
+> **[2:30 - 3:00] QA DECISION CENTER & CRYPTOGRAPHIC AUDIT TRAIL**
+> "Every screening decision is deterministic and auditable. Here in the QA Decision Center, the reliability engineer sees the full evidence breakdown: spec check, lot-relative score, forecast, conformal interval, and distribution stability.
+> Clicking Verify Hash Integrity validates the sequential SHA-256 tamper-evident hash chain stored in SQLite.
+> The status confirms: CHAIN VERIFIED INTACT. Every evaluation run is cryptographically bound to its model version, data seed, and decision policy.
+> TrustBurn AI provides early warning, quantifies uncertainty, detects its own blind spots, and leaves an auditable evidence chain. Thank you."
 
 ---
 

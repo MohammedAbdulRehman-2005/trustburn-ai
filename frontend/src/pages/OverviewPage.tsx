@@ -63,11 +63,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   ];
 
   const escapeStats = stats.defect_escape_stats || {
-    conventional_escapes: 28,
-    trustburn_escapes: 1,
-    escape_reduction_pct: 96.4,
-    early_warning_opportunity_count: 27,
-    description: "Conventional static screening passes within-spec degradation at 24h; TrustBurn AI prevents defect escapes."
+    conventional_escapes: 0,
+    trustburn_escapes: 0,
+    escape_reduction_pct: 0,
+    early_warning_opportunity_count: 0,
+    description: "Conventional static screening misses within-spec degradation at 24h; TrustBurn AI reduces defect escapes on this controlled benchmark."
   };
 
   return (
@@ -172,86 +172,81 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         </div>
       </div>
 
-      {/* Conventional vs TrustBurn Comparison Card with Dynamic Escape Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Conventional Screening Paradigm */}
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-              <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wide">
-                Conventional Screening Paradigm
-              </h3>
-            </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-950/80 text-rose-300 border border-rose-800">
-              High Defect Escape Rate
-            </span>
+      {/* Conventional vs TrustBurn Comparison Table per Mandatory Change 16 */}
+      <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-cyan-400" />
+              Screening Methodology Comparison: Conventional vs. TrustBurn AI
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Evaluating static threshold checking against multi-stream uncertainty-aware screening.
+            </p>
           </div>
+          <span className="px-2.5 py-1 rounded text-[11px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800 w-fit">
+            Controlled BurnIn-Bench Comparison
+          </span>
+        </div>
 
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Evaluates individual components solely against static absolute limits:
-          </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-slate-950 text-slate-400 font-mono text-[11px] uppercase border-b border-slate-800">
+              <tr>
+                <th className="p-3">Capability</th>
+                <th className="p-3">Conventional Screening*</th>
+                <th className="p-3 text-cyan-300">TrustBurn AI</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tr className="hover:bg-slate-800/30">
+                <td className="p-3 font-medium text-slate-200">Absolute Limit Checking</td>
+                <td className="p-3 font-mono text-emerald-400">✓ Evaluated</td>
+                <td className="p-3 font-mono text-cyan-300 font-semibold">✓ Evaluated</td>
+              </tr>
+              <tr className="hover:bg-slate-800/30">
+                <td className="p-3 font-medium text-slate-200">Lot-Relative Anomaly Detection</td>
+                <td className="p-3 font-mono text-slate-500">Not evaluated</td>
+                <td className="p-3 font-mono text-cyan-300 font-semibold">✓ Robust MAD Z-score</td>
+              </tr>
+              <tr className="hover:bg-slate-800/30">
+                <td className="p-3 font-medium text-slate-200">Early Drift Warning</td>
+                <td className="p-3 font-mono text-slate-500">Not predicted</td>
+                <td className="p-3 font-mono text-cyan-300 font-semibold">✓ Forecast to 168h</td>
+              </tr>
+              <tr className="hover:bg-slate-800/30">
+                <td className="p-3 font-medium text-slate-200">Prediction Uncertainty</td>
+                <td className="p-3 font-mono text-slate-500">Not quantified</td>
+                <td className="p-3 font-mono text-cyan-300 font-semibold">✓ Split-conformal interval</td>
+              </tr>
+              <tr className="hover:bg-slate-800/30">
+                <td className="p-3 font-medium text-slate-200">Distribution-Shift Sensitivity</td>
+                <td className="p-3 font-mono text-slate-500">Not monitored</td>
+                <td className="p-3 font-mono text-cyan-300 font-semibold">✓ Non-parametric shift diagnostic</td>
+              </tr>
+              <tr className="hover:bg-slate-800/30">
+                <td className="p-3 font-medium text-slate-200">Screening Decision</td>
+                <td className="p-3 font-mono text-slate-400">Static pass/fail</td>
+                <td className="p-3 font-mono text-emerald-300 font-semibold">Evidence-based triage (PASS/REVIEW/HIGH RISK)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-          <div className="p-3 bg-slate-950 border border-slate-800 rounded-md font-mono text-xs text-slate-300 space-y-1">
-            <div><code>Condition: measured_24h ≤ 50.0 µA → PASS</code></div>
-            <div className="text-slate-500 text-[11px]">Static limit at 24h treats 45.1 µA as identical to 10.1 µA.</div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-            <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">Defect Escapes (False Negatives)</span>
-              <span className="text-xl font-bold font-mono text-rose-400">{escapeStats.conventional_escapes}</span>
-              <span className="text-[10px] text-slate-500 block">Passed at 24h, failed at 168h</span>
-            </div>
-            <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">Screening Blindspots</span>
-              <span className="text-xs font-medium text-slate-300 block mt-1">Within-spec outliers & unspotted early drift</span>
-            </div>
+        <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+          <span>*Baseline static-threshold screening in this prototype.</span>
+          <div className="flex flex-wrap items-center gap-4 font-mono">
+            <span>Conventional Escapes: <strong className="text-rose-400">{escapeStats.conventional_escapes}</strong></span>
+            <span>TrustBurn Escapes: <strong className="text-emerald-400">{escapeStats.trustburn_escapes}</strong></span>
+            <span>Escape Reduction on Controlled Split: <strong className="text-cyan-300">{escapeStats.escape_reduction_pct}%</strong></span>
           </div>
         </div>
 
-        {/* TrustBurn AI Screening Architecture */}
-        <div className="p-5 rounded-xl bg-gradient-to-br from-slate-900 to-cyan-950/40 border border-cyan-500/30 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-              <h3 className="text-sm font-bold text-cyan-300 uppercase tracking-wide">
-                TrustBurn AI Screening Intelligence
-              </h3>
-            </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800">
-              {escapeStats.escape_reduction_pct}% Defect Escape Reduction
-            </span>
-          </div>
-
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Multi-stream evidence synthesis with conformal uncertainty and distribution shift diagnostics:
-          </p>
-
-          <div className="grid grid-cols-3 gap-2 text-xs pt-1">
-            <div className="p-2.5 bg-slate-950/80 border border-cyan-900/40 rounded-lg">
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">TrustBurn Escapes</span>
-              <span className="text-xl font-bold font-mono text-emerald-400">{escapeStats.trustburn_escapes}</span>
-              <span className="text-[10px] text-emerald-500/90 block">Defect escapes</span>
-            </div>
-            <div className="p-2.5 bg-slate-950/80 border border-cyan-900/40 rounded-lg">
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">Escape Reduction</span>
-              <span className="text-xl font-bold font-mono text-cyan-300">+{escapeStats.escape_reduction_pct}%</span>
-              <span className="text-[10px] text-cyan-400/90 block">Safety advantage</span>
-            </div>
-            <div className="p-2.5 bg-slate-950/80 border border-cyan-900/40 rounded-lg">
-              <span className="text-[10px] text-slate-400 uppercase block font-semibold">Early Warning Catch</span>
-              <span className="text-xl font-bold font-mono text-amber-300">{escapeStats.early_warning_opportunity_count}</span>
-              <span className="text-[10px] text-amber-400/90 block">Caught at ≤24h</span>
-            </div>
-          </div>
-
-          <div className="text-[11px] text-slate-300 pt-1 flex items-start gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-            <span>
-              <strong>Early-Warning Opportunity:</strong> Identifies accelerating drift and latent within-spec outliers at the 24h checkpoint, saving up to 144 hours of burn-in chamber resource cycles.
-            </span>
-          </div>
+        <div className="text-[11px] text-slate-300 pt-1 flex items-start gap-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800/60">
+          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <span>
+            <strong>Early-Warning Opportunity:</strong> Risk identified at ≤24h instead of waiting for the 168h endpoint. Enables rapid engineering triage while preserving chamber qualification integrity.
+          </span>
         </div>
       </div>
 

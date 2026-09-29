@@ -45,21 +45,26 @@ export const ValidationPage: React.FC = () => {
   }
 
   const cm = val.confusion_matrix || {
-    true_positive: 38,
-    false_positive: 6,
-    true_negative: 150,
-    false_negative: 2
+    true_positive: 0,
+    false_positive: 0,
+    true_negative: 0,
+    false_negative: 0
   };
 
   const metrics = val.classification_metrics || {
-    precision: 0.864,
-    recall: 0.950,
-    f1_score: 0.905,
-    false_negative_rate: 0.050
+    precision: 0,
+    recall: 0,
+    f1_score: 0,
+    false_negative_rate: 0
   };
 
-  const defectEscapes = cm.false_negative;
-  const conventionalEscapesApprox = Math.round(cm.true_positive * 0.7 + cm.false_negative);
+  const defectEscapes = val.defect_escape_comparison?.trustburn_escapes ?? cm.false_negative;
+  const conventionalEscapes = val.defect_escape_comparison?.conventional_escapes ?? (cm.true_positive + cm.false_negative);
+  const escapeReductionPct = val.defect_escape_comparison?.escape_reduction_pct ?? (
+    conventionalEscapes > 0
+      ? Math.round(((conventionalEscapes - defectEscapes) / conventionalEscapes) * 100)
+      : 0
+  );
 
   return (
     <div className="space-y-6">
@@ -121,14 +126,14 @@ export const ValidationPage: React.FC = () => {
             <div className="p-3.5 bg-emerald-950/20 border border-emerald-800/40 rounded-lg space-y-1">
               <span className="text-emerald-400 font-sans block text-[10px] uppercase font-semibold">True Positives (TP)</span>
               <div className="text-2xl font-bold text-emerald-400">{cm.true_positive}</div>
-              <span className="text-[10px] text-slate-400 font-sans block">Defective parts correctly quarantined</span>
+              <span className="text-[10px] text-slate-400 font-sans block">Defective parts correctly flagged/routed</span>
             </div>
 
             {/* False Positive */}
             <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-lg space-y-1">
               <span className="text-amber-400 font-sans block text-[10px] uppercase font-semibold">False Positives (FP)</span>
               <div className="text-2xl font-bold text-amber-400">{cm.false_positive}</div>
-              <span className="text-[10px] text-slate-400 font-sans block">Nominal parts held for engineering review</span>
+              <span className="text-[10px] text-slate-400 font-sans block">Nominal parts routed for engineering review</span>
             </div>
 
             {/* False Negative (Defect Escape) */}
@@ -138,7 +143,7 @@ export const ValidationPage: React.FC = () => {
                 Defect Escapes (FN)
               </span>
               <div className="text-2xl font-bold text-rose-400">{cm.false_negative}</div>
-              <span className="text-[10px] text-rose-300 font-sans block font-medium">Critical safety metric (Target: ~0)</span>
+              <span className="text-[10px] text-rose-300 font-sans block font-medium">Critical safety metric: False Negative</span>
             </div>
 
             {/* True Negative */}
@@ -170,39 +175,42 @@ export const ValidationPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Space-Grade Screening Safety Card */}
+        {/* False-Negative-Sensitive Screening Card */}
         <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-md flex flex-col justify-between">
           <div className="border-b border-slate-800 pb-3">
-            <h3 className="text-sm font-semibold text-slate-200">Space-Grade Screening Risk Assessment</h3>
-            <p className="text-[11px] text-slate-400">False-Negative sensitivity in satellite component burn-in</p>
+            <h3 className="text-sm font-semibold text-slate-200">False-Negative-Sensitive Screening</h3>
+            <p className="text-[11px] text-slate-400">Controlled BurnIn-Bench defect escape evaluation on held-out test partition</p>
           </div>
 
           <div className="space-y-3 text-xs text-slate-300">
             <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-semibold">Conventional Screening Escapes:</span>
-                <span className="font-mono text-rose-400 font-bold">~{conventionalEscapesApprox} components</span>
+                <span className="text-slate-400 font-semibold">Conventional Static Screening Escapes:</span>
+                <span className="font-mono text-rose-400 font-bold">{conventionalEscapes} components</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 font-semibold">TrustBurn Screening Escapes:</span>
-                <span className="font-mono text-emerald-400 font-bold">{defectEscapes} component</span>
+                <span className="font-mono text-emerald-400 font-bold">{defectEscapes} components</span>
               </div>
               <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                 <div
                   className="bg-emerald-500 h-full rounded-full"
-                  style={{ width: `${Math.round(((conventionalEscapesApprox - defectEscapes) / Math.max(conventionalEscapesApprox, 1)) * 100)}%` }}
+                  style={{ width: `${Math.min(100, Math.max(0, escapeReductionPct))}%` }}
                 />
+              </div>
+              <div className="text-[11px] text-right font-mono text-cyan-300">
+                {escapeReductionPct}% False-Negative Reduction on Controlled Test Split
               </div>
             </div>
 
             <p className="text-slate-400 leading-relaxed text-[11px]">
-              In high-reliability screening (MIL-STD-883 / ISRO qualification standards), a <strong>False Negative (Defect Escape)</strong> means an anomalous component is mounted onto flight hardware, risking mission degradation or loss in orbit.
+              In high-reliability qualification screening, a <strong>False Negative (Defect Escape)</strong> represents an anomalous component that passes unnoticed, presenting potential mission reliability risk. TrustBurn is designed to prioritize early detection and false-negative minimization on the controlled benchmark.
             </p>
 
             <div className="p-3 bg-cyan-950/20 border border-cyan-800/40 rounded-lg text-[11px] text-cyan-300 flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-cyan-400" />
               <span>
-                TrustBurn tunes its screening engine to maximize Recall ({">"}95%), prioritizing zero defect escape while routing ambiguous cases to non-destructive verification review.
+                TrustBurn tunes its screening engine to prioritize defect escape minimization and high recall, routing ambiguous trajectories to engineering verification review.
               </span>
             </div>
           </div>

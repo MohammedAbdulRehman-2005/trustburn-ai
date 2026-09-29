@@ -65,6 +65,7 @@ class ModelValidationResponse(BaseModel):
     shift_impact: Dict[str, Any]
     confusion_matrix: Dict[str, int]
     classification_metrics: Dict[str, Any]
+    defect_escape_comparison: Optional[Dict[str, Any]] = None
     honesty_disclaimer: str
 
 

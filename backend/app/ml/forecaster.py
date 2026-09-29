@@ -30,7 +30,7 @@ class DriftForecaster:
             max_iter=150,
             learning_rate=0.08,
             max_depth=5,
-            min_samples_leaf=15,
+            min_samples_leaf=7,
             random_state=seed,
             loss="squared_error"
         )

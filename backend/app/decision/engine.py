@@ -39,7 +39,7 @@ class DecisionEngine:
         """Determines PASS, REVIEW, or HIGH RISK with full reason code attribution and trust status."""
         reasons: List[str] = []
         decision: str = "PASS"
-        action: str = "Nominal trajectory: Cleared for standard flight-model screening schedule."
+        action: str = "PASS — no elevated risk identified in the controlled benchmark."
 
         limit = trajectory.absolute_upper_limit
 
@@ -55,7 +55,7 @@ class DecisionEngine:
         if evidence.absolute_spec_status == "EXCEEDED":
             decision = "HIGH RISK"
             reasons.append("REASON_ABSOLUTE_LIMIT_EXCEEDED")
-            action = f"Immediate Quarantine: Measured 24h value ({trajectory.val_24h} {trajectory.unit}) strictly exceeds upper spec limit ({limit} {trajectory.unit})."
+            action = f"HIGH RISK — routes the component for engineering disposition. Measured 24h value ({trajectory.val_24h} {trajectory.unit}) strictly exceeds upper spec limit ({limit} {trajectory.unit})."
 
         # Rule 2: Measurement Quality / Incompleteness
         elif trajectory.val_24h is None or trajectory.quality_24h in ["UNRELIABLE", "NOISY"]:
@@ -67,13 +67,13 @@ class DecisionEngine:
         elif shift.status == "SHIFT_DETECTED":
             decision = "REVIEW"
             reasons.append("REASON_DISTRIBUTION_SHIFT_REDUCED_TRUST")
-            action = "Lot Quarantine & Re-characterization: Current lot exhibits statistically significant distribution shift relative to reference baseline."
+            action = "Distribution Shift Review: Incoming lot differs materially from reference distribution; predictive trust reduced to REDUCED and component routed for review."
 
         # Rule 4: Forecast Point Prediction crosses spec limit
         elif forecast.predicted_168h >= limit:
             decision = "HIGH RISK"
             reasons.append("REASON_FORECAST_BREACHES_SPEC")
-            action = f"Early Warning Quarantine: Early drift forecast indicates 168h value ({forecast.predicted_168h:.1f} {trajectory.unit}) will breach absolute limit ({limit} {trajectory.unit})."
+            action = f"HIGH RISK — routes the component for engineering disposition. Early drift forecast indicates 168h value ({forecast.predicted_168h:.1f} {trajectory.unit}) will breach absolute limit ({limit} {trajectory.unit})."
 
         # Rule 5: Hidden Within-Spec Anomaly (Severe Lot-Relative MAD)
         elif evidence.robust_z_score >= self.thresholds["mad_outlier_threshold"]:
@@ -103,7 +103,7 @@ class DecisionEngine:
         else:
             decision = "PASS"
             reasons.append("REASON_NOMINAL_STABLE")
-            action = "Nominal trajectory: Cleared for standard flight-model screening schedule."
+            action = "PASS — no elevated risk identified in the controlled benchmark."
 
         # Structured Evidence Contributions Breakdown
         evidence_contributions = {

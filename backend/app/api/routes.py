@@ -418,6 +418,6 @@ def generate_component_report(component_id: str):
             "model_version": GLOBAL_STATE.forecaster.model_version,
             "data_seed": GLOBAL_STATE.active_seed,
             "feature_set": "Strict <=24h non-leaking features",
-            "disclaimer": "SYNTHETIC DEMONSTRATION DATA / RESEARCH PROTOTYPE. A prediction is not an observed physical failure. Not certified ISRO screening software."
+            "disclaimer": "Controlled synthetic benchmark for demonstrating the SIH26170 screening workflow. A prediction is an uncertainty-aware forecast, not an observed physical failure. Not certified ISRO screening software."
         }
     }
