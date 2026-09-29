@@ -13,8 +13,9 @@ from backend.app.schemas.screening import (
 class DecisionEngine:
     """Deterministic rule-based decision engine integrating multiple evidence streams.
     
-    Non-negotiable principle: Decisions are 100% deterministic and auditable.
-    LLMs or narrative layers can summarize evidence, but never override machine decisions.
+    Principle: Decisions are deterministic rule-based and auditable.
+    Machine-learning models provide calibrated forecasts and anomaly evidence;
+    deterministic policies map multi-stream evidence to screening decisions.
     """
 
     def __init__(self, policy_version: str = "POL-2026-01-DETERMINISTIC"):
@@ -35,12 +36,20 @@ class DecisionEngine:
         shift: ShiftDiagnostic,
         run_id: str
     ) -> ScreeningDecision:
-        """Determines PASS, REVIEW, or HIGH RISK with full reason code attribution."""
+        """Determines PASS, REVIEW, or HIGH RISK with full reason code attribution and trust status."""
         reasons: List[str] = []
         decision: str = "PASS"
         action: str = "Nominal trajectory: Cleared for standard flight-model screening schedule."
 
         limit = trajectory.absolute_upper_limit
+
+        # Evaluate Trust Status (NORMAL, WATCH, REDUCED)
+        if shift.status == "SHIFT_DETECTED" or trajectory.quality_24h in ["UNRELIABLE", "NOISY"] or forecast.uncertainty_flag == "INSUFFICIENT_DATA":
+            trust_status = "REDUCED"
+        elif shift.status == "WATCH" or forecast.uncertainty_flag == "HIGH_UNCERTAINTY" or forecast.interval_width > 12.0:
+            trust_status = "WATCH"
+        else:
+            trust_status = "NORMAL"
 
         # Rule 1: Absolute specification violation
         if evidence.absolute_spec_status == "EXCEEDED":
@@ -71,8 +80,8 @@ class DecisionEngine:
             decision = "HIGH RISK" if forecast.projected_slope > 0.05 else "REVIEW"
             reasons.append("REASON_LOT_RELATIVE_OUTLIER_MAD_HIGH")
             action = (
-                f"Engineering Triage: Within-spec anomaly detected. Component is {evidence.robust_z_score:.1f} MAD sigmas "
-                f"from lot median ({evidence.lot_median:.1f} {trajectory.unit}). Recommend precision parameter re-test."
+                f"Engineering Triage: Within-spec outlier detected. Component has Robust Z-score: {evidence.robust_z_score:.1f} "
+                f"relative to lot median ({evidence.lot_median:.1f} {trajectory.unit}). Recommend precision parameter re-test."
             )
 
         # Rule 6: Conformal interval crosses spec limit (Uncertainty-aware caution)
@@ -96,6 +105,34 @@ class DecisionEngine:
             reasons.append("REASON_NOMINAL_STABLE")
             action = "Nominal trajectory: Cleared for standard flight-model screening schedule."
 
+        # Structured Evidence Contributions Breakdown
+        evidence_contributions = {
+            "spec_compliance": f"{evidence.absolute_spec_status}: 24h = {trajectory.val_24h if trajectory.val_24h is not None else 'N/A'} {trajectory.unit} vs limit {limit:.1f} {trajectory.unit}",
+            "lot_relative_anomaly": f"{evidence.lot_relative_status}: Robust Z-score = {evidence.robust_z_score:.1f} (Lot Median: {evidence.lot_median:.1f} {trajectory.unit}, MAD: {evidence.lot_mad:.2f} {trajectory.unit})",
+            "drift_forecast": f"Projected 168h = {forecast.predicted_168h:.1f} {trajectory.unit} (Drift Rate: {forecast.projected_slope:+.4f} {trajectory.unit}/h)",
+            "conformal_uncertainty": f"90% Conformal Interval [{forecast.conformal_lower_bound:.1f}, {forecast.conformal_upper_bound:.1f}] {trajectory.unit} (Width: {forecast.interval_width:.1f} {trajectory.unit}, Status: {forecast.uncertainty_flag})",
+            "distribution_stability": f"Lot {trajectory.lot_id}: {shift.status} (Median Delta: {shift.median_delta:.2f}, Scale Ratio: {shift.mad_ratio:.2f})",
+            "measurement_integrity": f"Quality Flag: {trajectory.quality_24h}, Valid Readings: {sum(1 for v in [trajectory.val_0h, trajectory.val_24h] if v is not None)}/2 early checkpoints"
+        }
+
+        # Conventional Screening Comparison
+        conventional_pass = (trajectory.val_24h is not None and trajectory.val_24h <= limit)
+        conventional_decision = "PASS" if conventional_pass else ("REVIEW" if trajectory.val_24h is None else "HIGH RISK")
+        
+        is_escape_vulnerability = conventional_pass and (decision in ["REVIEW", "HIGH RISK"])
+        conventional_advantage = (
+            "Conventional static screening passes this component at 24h because static threshold is unbreached. TrustBurn early warning prevents defect escape."
+            if is_escape_vulnerability else
+            "Screening disposition aligns with conventional specification thresholds."
+        )
+
+        conventional_screening = {
+            "conventional_decision": conventional_decision,
+            "conventional_rule": f"Static Threshold: y(24h) <= {limit:.1f} {trajectory.unit}",
+            "defect_escape_vulnerability": "HIGH" if is_escape_vulnerability else "LOW",
+            "trustburn_advantage": conventional_advantage
+        }
+
         evidence_dict = {
             "val_0h": trajectory.val_0h,
             "val_24h": trajectory.val_24h,
@@ -115,10 +152,13 @@ class DecisionEngine:
             run_id=run_id,
             timestamp=datetime.now().isoformat(),
             decision=decision,
+            trust_status=trust_status,
             reason_codes=reasons,
             recommended_action=action,
             model_version="v1.0.0-rc",
             thresholds_applied=self.thresholds,
             evidence_summary=evidence_dict,
+            evidence_contributions=evidence_contributions,
+            conventional_screening=conventional_screening,
             reviewer_notes=None
         )

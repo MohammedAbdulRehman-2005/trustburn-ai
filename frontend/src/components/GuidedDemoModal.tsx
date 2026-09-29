@@ -75,7 +75,7 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
             <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-md">
               <span className="text-xs font-semibold text-amber-400 uppercase tracking-wide">TrustBurn Dynamic Screening</span>
               <div className="text-lg font-bold text-amber-300 mt-1">SEVERE ANOMALY</div>
-              <p className="text-[11px] text-slate-400 mt-1">Robust MAD score: <strong>19.7 sigmas</strong> from lot median 10.1 µA.</p>
+              <p className="text-[11px] text-slate-400 mt-1">Robust Z-score: <strong>28.6</strong> relative to lot median 10.1 µA.</p>
             </div>
           </div>
           <p className="text-xs text-amber-300/90 font-medium">
@@ -112,7 +112,7 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
             </div>
           </div>
           <p className="text-xs text-slate-400">
-            Retrospective evaluation will show the physical component tatsächlich degraded to 62.1 µA, confirming the early warning!
+            Retrospective evaluation will show the held-out benchmark measurement degraded to 62.1 µA, confirming the early warning!
           </p>
         </div>
       )
@@ -137,7 +137,7 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
               <strong>Cross-Lot Distribution Shift Diagnostic:</strong> When Lot <code className="text-cyan-300 font-mono">LOT-2026-D-SHIFT</code> arrives with altered baseline (24.5 µA vs 10.1 µA), non-parametric median/scale tests trip <code className="text-amber-400 font-mono">SHIFT_DETECTED</code>.
             </li>
             <li>
-              <strong>Scientific Honesty:</strong> Shift warnings reduce automated trust and route components to REVIEW, honestly reporting that conformal exchangeability may degrade.
+              <strong>Scientific Honesty:</strong> Shift warnings reduce automated trust to REDUCED and route components to REVIEW, honestly reporting that conformal exchangeability may degrade.
             </li>
           </ul>
         </div>
@@ -153,13 +153,13 @@ export const GuidedDemoModal: React.FC<GuidedDemoModalProps> = ({
       content: (
         <div className="space-y-3 text-sm text-slate-300">
           <p>
-            Decisions are <strong>100% deterministic</strong>. No generative LLM controls PASS / REVIEW / HIGH RISK:
+            Decisions are <strong>deterministic rule-based</strong>. No generative LLM controls PASS / REVIEW / HIGH RISK:
           </p>
           <div className="p-3 bg-slate-900 border border-slate-800 rounded-md font-mono text-xs space-y-1 text-slate-300">
             <div><span className="text-slate-500">Decision:</span> <span className="text-amber-400 font-bold">REVIEW / HIGH RISK</span></div>
             <div><span className="text-slate-500">Reason Codes:</span> ['REASON_LOT_RELATIVE_OUTLIER_MAD_HIGH']</div>
             <div><span className="text-slate-500">Verification Action:</span> "Hold component: Recommend precision parameter re-test."</div>
-            <div><span className="text-slate-500">Audit Trail:</span> Persisted to SQLite database with Run ID, features, & split hash.</div>
+            <div><span className="text-slate-500">Audit Trail:</span> Persisted to SQLite database with Run ID, features, & SHA-256 hash.</div>
           </div>
           <p className="text-xs text-slate-400">
             Reliability engineers can inspect full evidence, record review notes, and export official QA audit reports.

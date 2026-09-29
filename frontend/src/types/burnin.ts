@@ -63,11 +63,19 @@ export interface ScreeningDecision {
   run_id: string;
   timestamp: string;
   decision: 'PASS' | 'REVIEW' | 'HIGH RISK';
+  trust_status: 'NORMAL' | 'WATCH' | 'REDUCED';
   reason_codes: string[];
   recommended_action: string;
   model_version: string;
   thresholds_applied: Record<string, number>;
   evidence_summary: Record<string, any>;
+  evidence_contributions?: Record<string, string>;
+  conventional_screening?: {
+    conventional_decision: string;
+    conventional_rule: string;
+    defect_escape_vulnerability: string;
+    trustburn_advantage: string;
+  };
   reviewer_notes: string | null;
 }
 
@@ -88,6 +96,7 @@ export interface ComponentListItem {
   conformal_lower: number | null;
   conformal_upper: number | null;
   decision: 'PASS' | 'REVIEW' | 'HIGH RISK';
+  trust_status: 'NORMAL' | 'WATCH' | 'REDUCED';
   reason_codes: string[];
   recommended_action: string;
   is_demo_fixture: boolean;
@@ -104,6 +113,13 @@ export interface OverviewStats {
   review_count: number;
   high_risk_count: number;
   within_spec_anomalies: number;
+  defect_escape_stats?: {
+    conventional_escapes: number;
+    trustburn_escapes: number;
+    escape_reduction_pct: number;
+    early_warning_opportunity_count: number;
+    description: string;
+  };
   risk_distribution: {
     PASS: number;
     REVIEW: number;
@@ -121,6 +137,37 @@ export interface OverviewStats {
   active_seed: number;
   model_version: string;
   last_run_timestamp: string;
+}
+
+export interface AuditRun {
+  run_id: string;
+  timestamp: string;
+  dataset_identifier: string;
+  data_seed: number;
+  model_version: string;
+  features_used: string;
+  train_lots: string;
+  calibration_lots: string;
+  test_lots: string;
+  thresholds_applied: string;
+  total_screened: number;
+  pass_count: number;
+  review_count: number;
+  high_risk_count: number;
+  decision_policy_version: string;
+  previous_hash: string;
+  record_hash: string;
+}
+
+export interface ChainVerificationResponse {
+  valid: boolean;
+  chain_length: number;
+  genesis_hash: string | null;
+  latest_hash: string | null;
+  algorithm: string;
+  broken_block_index: number | null;
+  status: string;
+  message: string;
 }
 
 export interface DemoScenario {

@@ -24,6 +24,8 @@ def test_api_overview():
     assert data["review_count"] >= 0
     assert data["high_risk_count"] >= 0
     assert "risk_by_lot" in data
+    assert "defect_escape_stats" in data
+    assert "escape_reduction_pct" in data["defect_escape_stats"]
 
 
 def test_api_components_and_detail():
@@ -32,6 +34,7 @@ def test_api_components_and_detail():
     data = res.json()
     assert data["total"] > 0
     assert len(data["items"]) <= 10
+    assert "trust_status" in data["items"][0]
 
     first_id = data["items"][0]["component_id"]
     detail_res = client.get(f"/api/components/{first_id}")
@@ -41,6 +44,8 @@ def test_api_components_and_detail():
     assert "evidence" in det
     assert "forecast" in det
     assert "decision" in det
+    assert "trust_status" in det["decision"]
+    assert "evidence_contributions" in det["decision"]
 
 
 def test_api_scenarios():
@@ -49,6 +54,20 @@ def test_api_scenarios():
     scenarios = res.json()
     assert len(scenarios) == 5
     assert scenarios[0]["scenario_id"] == "SCENARIO_A_WITHIN_SPEC"
+    assert scenarios[1]["scenario_id"] == "SCENARIO_B_EARLY_DRIFT"
+    assert scenarios[2]["scenario_id"] == "SCENARIO_C_DISTRIBUTION_SHIFT"
+    assert scenarios[3]["scenario_id"] == "SCENARIO_D_NORMAL"
+    assert scenarios[4]["scenario_id"] == "SCENARIO_E_HIGH_RISK"
+
+
+def test_api_audit_verify_chain():
+    res = client.get("/api/audit/verify-chain")
+    assert res.status_code == 200
+    data = res.json()
+    assert "valid" in data
+    assert data["valid"] is True
+    assert data["algorithm"] == "SHA-256"
+    assert data["chain_length"] >= 1
 
 
 def test_api_forecast_and_reveal():

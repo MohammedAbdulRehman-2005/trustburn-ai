@@ -19,6 +19,8 @@ class AuditRunRecord(BaseModel):
     review_count: int
     high_risk_count: int
     decision_policy_version: str = "POL-2026-01-DETERMINISTIC"
+    previous_hash: str = Field(default="0"*64, description="SHA-256 hash of previous audit record in chain")
+    record_hash: str = Field(default="", description="Cryptographic SHA-256 integrity hash of this record")
 
 
 class ComponentAuditRecord(BaseModel):
@@ -35,6 +37,7 @@ class ComponentAuditRecord(BaseModel):
     conformal_lower: float
     conformal_upper: float
     shift_status: str
+    trust_status: str = Field(default="NORMAL", description="NORMAL, WATCH, or REDUCED")
     decision: str
     reason_codes: List[str]
     recommended_action: str

@@ -7,7 +7,9 @@ import {
   ShiftDiagnostic,
   ScreeningDecision,
   DemoScenario,
-  ModelValidationResponse
+  ModelValidationResponse,
+  AuditRun,
+  ChainVerificationResponse
 } from '../types/burnin';
 
 const API_BASE = '/api';
@@ -149,9 +151,15 @@ export const api = {
     return res.json();
   },
 
-  async getAuditRuns() {
+  async getAuditRuns(): Promise<AuditRun[]> {
     const res = await fetch(`${API_BASE}/audit/runs`);
     if (!res.ok) throw new Error('Failed to fetch audit runs');
+    return res.json();
+  },
+
+  async verifyAuditChain(): Promise<ChainVerificationResponse> {
+    const res = await fetch(`${API_BASE}/audit/verify-chain`);
+    if (!res.ok) throw new Error('Failed to verify audit chain');
     return res.json();
   },
 

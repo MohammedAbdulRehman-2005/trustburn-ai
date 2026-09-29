@@ -98,25 +98,25 @@ class AnomalyDetector:
                 if spec_status == "WITHIN_LIMIT":
                     rationale = (
                         f"Absolute spec: PASS ({v24:.2f} {trajectory.unit} <= {limit:.1f} {trajectory.unit}). "
-                        f"Lot-relative evidence: SEVERE ANOMALY ({robust_z:.1f} MAD sigma from lot median {med:.2f} {trajectory.unit}, MAD {mad:.2f} {trajectory.unit}). "
-                        f"Demonstrates within-spec latent outlier missed by traditional absolute screening."
+                        f"Lot-relative evidence: SEVERE ANOMALY (Robust Z-score: {robust_z:.1f} relative to lot median {med:.2f} {trajectory.unit}, MAD {mad:.2f} {trajectory.unit}). "
+                        f"Potential latent-defect indicator: Demonstrates within-spec latent outlier missed by traditional absolute screening."
                     )
                 else:
                     rationale = (
                         f"Absolute spec EXCEEDED ({v24:.2f} {trajectory.unit} > {limit:.1f} {trajectory.unit}) "
-                        f"and extreme lot outlier ({robust_z:.1f} MAD sigma)."
+                        f"and extreme lot outlier (Robust Z-score: {robust_z:.1f})."
                     )
             elif robust_z >= 2.5:
                 lot_rel_status = "ELEVATED_DRIFT"
                 rationale = (
                     f"Absolute spec: {spec_status}. "
-                    f"Lot-relative evidence indicates moderately elevated drift ({robust_z:.1f} MAD sigma from lot median {med:.2f} {trajectory.unit})."
+                    f"Lot-relative evidence indicates moderately elevated drift (Robust Z-score: {robust_z:.1f} from lot median {med:.2f} {trajectory.unit})."
                 )
             else:
                 lot_rel_status = "NOMINAL"
                 rationale = (
                     f"Absolute spec: {spec_status}. "
-                    f"Within normal lot distribution ({robust_z:.1f} MAD sigma, lot median {med:.2f} {trajectory.unit})."
+                    f"Within normal lot distribution (Robust Z-score: {robust_z:.1f}, lot median {med:.2f} {trajectory.unit})."
                 )
 
         # Supplementary Isolation Forest Score

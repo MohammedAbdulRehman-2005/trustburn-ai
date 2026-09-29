@@ -15,6 +15,7 @@ class OverviewStats(BaseModel):
     review_count: int
     high_risk_count: int
     within_spec_anomalies: int
+    defect_escape_stats: Dict[str, Any] = Field(default_factory=dict)
     risk_distribution: Dict[str, int]
     risk_by_lot: List[Dict[str, Any]]
     active_dataset_id: str

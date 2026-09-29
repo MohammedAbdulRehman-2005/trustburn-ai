@@ -88,3 +88,30 @@ def test_decision_unreliable_quality_review(base_context):
     decision = engine.evaluate(traj, ev, fc, sh, run_id="TEST-RUN")
     assert decision.decision == "REVIEW"
     assert "REASON_POOR_MEASUREMENT_QUALITY" in decision.reason_codes
+    assert decision.trust_status == "REDUCED"
+
+
+def test_trust_status_and_evidence_contributions(base_context):
+    engine, traj, ev, fc, sh = base_context
+    # Nominal case
+    dec_nom = engine.evaluate(traj, ev, fc, sh, run_id="TEST-RUN")
+    assert dec_nom.trust_status == "NORMAL"
+    assert "spec_compliance" in dec_nom.evidence_contributions
+    assert "lot_relative_anomaly" in dec_nom.evidence_contributions
+    assert "drift_forecast" in dec_nom.evidence_contributions
+    assert "conformal_uncertainty" in dec_nom.evidence_contributions
+    assert "distribution_stability" in dec_nom.evidence_contributions
+    assert "measurement_integrity" in dec_nom.evidence_contributions
+    assert "conventional_screening" in dec_nom.model_dump()
+    assert dec_nom.conventional_screening["conventional_decision"] == "PASS"
+
+    # Shifted lot reduces trust
+    sh.status = "SHIFT_DETECTED"
+    dec_shift = engine.evaluate(traj, ev, fc, sh, run_id="TEST-RUN")
+    assert dec_shift.trust_status == "REDUCED"
+
+    # High uncertainty triggers WATCH
+    sh.status = "NORMAL"
+    fc.uncertainty_flag = "HIGH_UNCERTAINTY"
+    dec_watch = engine.evaluate(traj, ev, fc, sh, run_id="TEST-RUN")
+    assert dec_watch.trust_status == "WATCH"

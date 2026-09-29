@@ -114,6 +114,7 @@ def list_components(
             "conformal_lower": fc.conformal_lower_bound if fc else None,
             "conformal_upper": fc.conformal_upper_bound if fc else None,
             "decision": dec.decision if dec else "UNKNOWN",
+            "trust_status": dec.trust_status if dec else "NORMAL",
             "reason_codes": dec.reason_codes if dec else [],
             "recommended_action": dec.recommended_action if dec else "",
             "is_demo_fixture": t.is_demo_fixture,
@@ -356,6 +357,12 @@ def get_scenarios():
 def list_audit_runs():
     """Lists historical screening runs in persistent storage."""
     return GLOBAL_STATE.audit_store.list_runs()
+
+
+@router.get("/audit/verify-chain")
+def verify_audit_chain():
+    """Cryptographically verifies the SHA-256 tamper-evident hash chain."""
+    return GLOBAL_STATE.audit_store.verify_chain_integrity()
 
 
 @router.get("/reports/component/{component_id}")

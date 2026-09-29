@@ -275,6 +275,7 @@ class SystemState:
                     conformal_lower=forecast.conformal_lower_bound,
                     conformal_upper=forecast.conformal_upper_bound,
                     shift_status=shift_diag.status,
+                    trust_status=decision.trust_status,
                     decision=decision.decision,
                     reason_codes=decision.reason_codes,
                     recommended_action=decision.recommended_action,
@@ -338,6 +339,36 @@ class SystemState:
                 )).status
             })
 
+        # Defect escape analysis (Conventional 24h static screening vs TrustBurn)
+        conv_escapes = 0
+        tb_escapes = 0
+        early_warn_opp = 0
+        for t in self.trajectories:
+            cid = t.component_id
+            dec = self.decision_map.get(cid)
+            is_true_defect = (t.val_168h is not None and t.val_168h > 50.0) or (t.synthetic_ground_truth in [
+                "GRADUAL_LATENT_DEGRADATION", "ABRUPT_LATE_BREAKDOWN",
+                "LATENT_GATE_OXIDE_CONTAMINATION", "THERMAL_ELECTROMIGRATION_ACCELERATION",
+                "CATASTROPHIC_DIE_ATTACH_VOID", "ELEVATED_WITHIN_SPEC_OUTLIER"
+            ])
+            # Conventional screening at 24h passes if val_24h <= 50.0
+            conv_pass = (t.val_24h is not None and t.val_24h <= 50.0)
+            if conv_pass and is_true_defect:
+                conv_escapes += 1
+            if dec and dec.decision == "PASS" and is_true_defect:
+                tb_escapes += 1
+            if dec and dec.decision in ["REVIEW", "HIGH RISK"] and is_true_defect:
+                early_warn_opp += 1
+
+        escape_red = round(((conv_escapes - tb_escapes) / max(conv_escapes, 1)) * 100, 1)
+        defect_escape_stats = {
+            "conventional_escapes": conv_escapes,
+            "trustburn_escapes": tb_escapes,
+            "escape_reduction_pct": escape_red,
+            "early_warning_opportunity_count": early_warn_opp,
+            "description": "Conventional static screening misses within-spec degradation at 24h; TrustBurn AI reduces defect escapes."
+        }
+
         return {
             "total_lots": len(lots),
             "total_components": total,
@@ -348,6 +379,7 @@ class SystemState:
             "review_count": rev_c,
             "high_risk_count": hr_c,
             "within_spec_anomalies": within_spec,
+            "defect_escape_stats": defect_escape_stats,
             "risk_distribution": {"PASS": pass_c, "REVIEW": rev_c, "HIGH_RISK": hr_c},
             "risk_by_lot": risk_by_lot,
             "active_dataset_id": self.dataset_id,
@@ -357,52 +389,52 @@ class SystemState:
         }
 
     def get_demo_scenarios(self) -> List[Dict[str, Any]]:
-        """Returns the 5 locked demonstration scenarios."""
+        """Returns the 5 locked demonstration scenarios aligned with Section 27."""
         return [
             {
                 "scenario_id": "SCENARIO_A_WITHIN_SPEC",
                 "title": "A. Hidden Within-Spec Anomaly",
-                "description": "Component operates near 45 µA against a 50 µA absolute limit. Conventional screening passes it; TrustBurn's robust lot-relative MAD engine flags severe anomaly (19.7 MAD sigma).",
+                "description": "Component operates at 45.1 µA against 50.0 µA upper limit. Conventional screening passes it; TrustBurn's robust lot-relative MAD engine flags severe anomaly (Robust Z-score: 28.6).",
                 "component_id": "CMP-DEMO-WITHIN-SPEC",
                 "lot_id": "LOT-2026-C",
-                "demonstration_lesson": "Static Absolute PASS (45.1 <= 50.0 uA) vs Dynamic Lot-Relative Anomaly.",
+                "demonstration_lesson": "Static Absolute PASS (45.1 <= 50.0 µA) vs Dynamic Lot-Relative Anomaly.",
                 "expected_decision": "HIGH RISK / REVIEW"
             },
             {
                 "scenario_id": "SCENARIO_B_EARLY_DRIFT",
                 "title": "B. Early Drift Warning",
-                "description": "Steep 0h->24h slope (+0.429 µA/h) forecasts 168h spec violation (predicted 58.5 µA). 96h & 168h measurements held out during inference; retrospective outcome confirms physical failure.",
+                "description": "Steep 0h->24h slope (+0.429 µA/h) forecasts 168h spec violation (predicted ~58.5 µA). Held-out benchmark outcome confirms physical breach (62.1 µA).",
                 "component_id": "CMP-DEMO-EARLY-DRIFT",
                 "lot_id": "LOT-2026-C",
                 "demonstration_lesson": "Early 24h drift prediction with held-out verification.",
                 "expected_decision": "HIGH RISK"
             },
             {
-                "scenario_id": "SCENARIO_C_SHIFT_WATCH",
+                "scenario_id": "SCENARIO_C_DISTRIBUTION_SHIFT",
                 "title": "C. Distribution Shift / Reduced Trust",
-                "description": "A production lot with shifted process baseline trips the non-parametric shift diagnostic, reducing automated trust and routing nominal components to REVIEW.",
+                "description": "Production lot with shifted process baseline trips non-parametric shift diagnostic, reducing predictive trust to REDUCED and routing components to REVIEW.",
                 "component_id": "CMP-DEMO-SHIFT",
                 "lot_id": "LOT-2026-D-SHIFT",
                 "demonstration_lesson": "Lot distribution shift diagnostic alerts engineering of reduced predictive trust.",
                 "expected_decision": "REVIEW"
             },
             {
-                "scenario_id": "SCENARIO_D_UNRELIABLE_MEASUREMENT",
-                "title": "D. Missing / Unreliable Measurement",
-                "description": "Missing 24h measurement or noisy DAQ flag prevents reliable inference. System refuses to guess and transparently requests targeted re-testing.",
-                "component_id": "CMP-DEMO-UNRELIABLE",
-                "lot_id": "LOT-2026-C",
-                "demonstration_lesson": "Data quality awareness routing incomplete trajectories to REVIEW.",
-                "expected_decision": "REVIEW"
-            },
-            {
-                "scenario_id": "SCENARIO_E_NORMAL",
-                "title": "E. Nominal Component",
+                "scenario_id": "SCENARIO_D_NORMAL",
+                "title": "D. Nominal Component",
                 "description": "Stable trajectory within normal lot bounds and gentle normal aging drift. Forecast remains well below limits with tight conformal interval.",
                 "component_id": "CMP-DEMO-NORMAL",
                 "lot_id": "LOT-2026-C",
                 "demonstration_lesson": "Nominal verification and automated screening PASS.",
                 "expected_decision": "PASS"
+            },
+            {
+                "scenario_id": "SCENARIO_E_HIGH_RISK",
+                "title": "E. High-Risk Multi-Signal Breach",
+                "description": "Severe early breach at 24h (52.4 µA > 50.0 µA spec) coupled with rapid accelerating drift and extreme lot outlier score. System triggers immediate quarantine.",
+                "component_id": "CMP-DEMO-HIGHRISK",
+                "lot_id": "LOT-2026-C",
+                "demonstration_lesson": "Multi-signal breach triggering immediate quarantine action.",
+                "expected_decision": "HIGH RISK"
             }
         ]
 

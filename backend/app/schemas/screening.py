@@ -51,9 +51,12 @@ class ScreeningDecision(BaseModel):
     run_id: str
     timestamp: str
     decision: str = Field(..., description="PASS, REVIEW, or HIGH RISK")
+    trust_status: str = Field(default="NORMAL", description="NORMAL, WATCH, or REDUCED")
     reason_codes: List[str] = Field(..., description="Machine-readable decision reason codes")
     recommended_action: str = Field(..., description="Recommended engineering verification step")
     model_version: str = Field(default="v1.0.0-rc")
     thresholds_applied: Dict[str, float]
     evidence_summary: Dict[str, Any]
+    evidence_contributions: Dict[str, str] = Field(default_factory=dict, description="Detailed per-evidence stream summary")
+    conventional_screening: Dict[str, Any] = Field(default_factory=dict, description="Comparison with conventional screening")
     reviewer_notes: Optional[str] = None

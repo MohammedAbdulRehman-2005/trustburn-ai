@@ -75,19 +75,9 @@ def generate_burnin_dataset(
                 "values": [24.1, 25.2, 26.8, 28.5],
                 "qualities": ["GOOD", "GOOD", "GOOD", "GOOD"],
                 "truth": "PROCESS_CORNER_SHIFTED_LOT",
-                "scenario_id": "SCENARIO_C_SHIFT_WATCH",
+                "scenario_id": "SCENARIO_C_DISTRIBUTION_SHIFT",
             },
-            # Scenario D: Missing / Unreliable Measurement
-            {
-                "component_id": "CMP-DEMO-UNRELIABLE",
-                "lot_id": "LOT-2026-C",
-                "split": "TEST",
-                "values": [10.2, None, 11.5, 12.0],
-                "qualities": ["GOOD", "UNRELIABLE", "GOOD", "GOOD"],
-                "truth": "PROBE_CONTACT_INTERMITTENCY",
-                "scenario_id": "SCENARIO_D_UNRELIABLE_MEASUREMENT",
-            },
-            # Scenario E: Normal Baseline Component
+            # Scenario D: Normal Baseline Component
             {
                 "component_id": "CMP-DEMO-NORMAL",
                 "lot_id": "LOT-2026-C",
@@ -95,7 +85,27 @@ def generate_burnin_dataset(
                 "values": [9.8, 10.2, 10.9, 11.4],
                 "qualities": ["GOOD", "GOOD", "GOOD", "GOOD"],
                 "truth": "NOMINAL_HEALTHY_DEVICE",
-                "scenario_id": "SCENARIO_E_NORMAL",
+                "scenario_id": "SCENARIO_D_NORMAL",
+            },
+            # Scenario E: High-Risk Multi-Signal Breach
+            {
+                "component_id": "CMP-DEMO-HIGHRISK",
+                "lot_id": "LOT-2026-C",
+                "split": "TEST",
+                "values": [28.5, 52.4, 76.0, 104.2],
+                "qualities": ["GOOD", "GOOD", "GOOD", "GOOD"],
+                "truth": "CATASTROPHIC_DIE_ATTACH_VOID",
+                "scenario_id": "SCENARIO_E_HIGH_RISK",
+            },
+            # Supplementary DAQ sensor fault exemplar
+            {
+                "component_id": "CMP-DEMO-UNRELIABLE",
+                "lot_id": "LOT-2026-C",
+                "split": "TEST",
+                "values": [10.2, None, 11.5, 12.0],
+                "qualities": ["GOOD", "UNRELIABLE", "GOOD", "GOOD"],
+                "truth": "PROBE_CONTACT_INTERMITTENCY",
+                "scenario_id": "SCENARIO_EXTRA_UNRELIABLE",
             },
         ]
 
@@ -168,26 +178,42 @@ def generate_burnin_dataset(
             # Latent mechanism selection
             # 82% Nominal, 8% Gradual Drift, 5% Abrupt Late, 3% Outlier Baseline, 2% Sensor glitch
             rand_mech = rng.random()
-            if rand_mech < 0.82:
+            if rand_mech < 0.78:
                 mech_type = "NOMINAL_HEALTHY"
                 c_base = rng.normal(actual_lot_center, base_std)
                 c_base = max(1.0, c_base)
+                # Heteroscedastic measurement noise: variance scales with current level
+                sigma_noise = 0.15 + 0.012 * c_base
+                t_noise = rng.normal(0, sigma_noise, size=4)
                 # Mild normal aging drift: power law delta_R = c * t^0.35 + noise
-                aging_rate = rng.uniform(0.005, 0.02)
-                t_noise = rng.normal(0, 0.25, size=4)
+                aging_rate = rng.uniform(0.005, 0.018)
                 v0 = c_base + t_noise[0]
                 v24 = c_base + aging_rate * (24.0 ** 0.5) + t_noise[1]
                 v96 = c_base + aging_rate * (96.0 ** 0.5) + t_noise[2]
                 v168 = c_base + aging_rate * (168.0 ** 0.5) + t_noise[3]
                 q0, q24, q96, q168 = "GOOD", "GOOD", "GOOD", "GOOD"
 
+            elif rand_mech < 0.83:
+                # Benign static offset: elevated initial leakage but zero accelerated drift
+                mech_type = "BENIGN_MANUFACTURING_OFFSET"
+                c_base = rng.normal(actual_lot_center + 4.5, 0.8)
+                sigma_noise = 0.18 + 0.01 * c_base
+                t_noise = rng.normal(0, sigma_noise, size=4)
+                flat_rate = rng.uniform(0.001, 0.005)
+                v0 = c_base + t_noise[0]
+                v24 = c_base + flat_rate * (24.0 ** 0.4) + t_noise[1]
+                v96 = c_base + flat_rate * (96.0 ** 0.4) + t_noise[2]
+                v168 = c_base + flat_rate * (168.0 ** 0.4) + t_noise[3]
+                q0, q24, q96, q168 = "GOOD", "GOOD", "GOOD", "GOOD"
+
             elif rand_mech < 0.90:
                 mech_type = "GRADUAL_LATENT_DEGRADATION"
                 c_base = rng.normal(actual_lot_center + 1.5, base_std)
-                # Accelerated thermal drift: Arrhenius inspired
-                drift_power = rng.uniform(0.7, 1.1)
-                drift_coeff = rng.uniform(0.08, 0.22)
-                t_noise = rng.normal(0, 0.35, size=4)
+                # Accelerated thermal drift: Arrhenius-inspired degradation
+                drift_power = rng.uniform(0.75, 1.15)
+                drift_coeff = rng.uniform(0.09, 0.24)
+                sigma_noise = 0.20 + 0.015 * c_base
+                t_noise = rng.normal(0, sigma_noise, size=4)
                 v0 = c_base + t_noise[0]
                 v24 = c_base + drift_coeff * (24.0 ** drift_power) + t_noise[1]
                 v96 = c_base + drift_coeff * (96.0 ** drift_power) + t_noise[2]
@@ -197,10 +223,11 @@ def generate_burnin_dataset(
             elif rand_mech < 0.95:
                 mech_type = "ABRUPT_LATE_BREAKDOWN"
                 c_base = rng.normal(actual_lot_center, base_std)
-                t_noise = rng.normal(0, 0.3, size=4)
+                sigma_noise = 0.18 + 0.012 * c_base
+                t_noise = rng.normal(0, sigma_noise, size=4)
                 v0 = c_base + t_noise[0]
                 v24 = c_base + 0.5 + t_noise[1]  # Early looks almost normal!
-                # Abrupt breakdown after 48h
+                # Abrupt breakdown after 48h (gate oxide dielectric rupture)
                 v96 = c_base + rng.uniform(8.0, 18.0) + t_noise[2]
                 v168 = c_base + rng.uniform(25.0, 48.0) + t_noise[3]
                 q0, q24, q96, q168 = "GOOD", "GOOD", "GOOD", "GOOD"
@@ -209,7 +236,8 @@ def generate_burnin_dataset(
                 mech_type = "ELEVATED_WITHIN_SPEC_OUTLIER"
                 # Elevated baseline close to specification limit
                 c_base = rng.normal(38.0 if not is_shifted else 44.0, 2.0)
-                t_noise = rng.normal(0, 0.4, size=4)
+                sigma_noise = 0.25 + 0.015 * c_base
+                t_noise = rng.normal(0, sigma_noise, size=4)
                 v0 = c_base + t_noise[0]
                 v24 = c_base + 1.2 + t_noise[1]
                 v96 = c_base + 2.5 + t_noise[2]

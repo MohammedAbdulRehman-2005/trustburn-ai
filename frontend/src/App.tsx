@@ -57,11 +57,13 @@ export const App: React.FC = () => {
       setActiveTab('intelligence');
     } else if (scenarioId === 'SCENARIO_B_EARLY_DRIFT') {
       setActiveTab('lab');
-    } else if (scenarioId === 'SCENARIO_C_SHIFT_WATCH') {
+    } else if (scenarioId === 'SCENARIO_C_DISTRIBUTION_SHIFT' || scenarioId === 'SCENARIO_C_SHIFT_WATCH') {
       setActiveTab('intelligence');
-    } else if (scenarioId === 'SCENARIO_D_UNRELIABLE_MEASUREMENT') {
-      setActiveTab('explorer');
-    } else if (scenarioId === 'SCENARIO_E_NORMAL') {
+    } else if (scenarioId === 'SCENARIO_D_NORMAL') {
+      setActiveTab('intelligence');
+    } else if (scenarioId === 'SCENARIO_E_HIGH_RISK') {
+      setActiveTab('intelligence');
+    } else {
       setActiveTab('intelligence');
     }
   };
