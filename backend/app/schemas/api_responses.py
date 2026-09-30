@@ -63,7 +63,7 @@ class ModelValidationResponse(BaseModel):
     forecast_metrics: Dict[str, Any]
     uncertainty_metrics: Dict[str, Any]
     shift_impact: Dict[str, Any]
-    confusion_matrix: Dict[str, int]
+    confusion_matrix: Dict[str, Any]
     classification_metrics: Dict[str, Any]
     defect_escape_comparison: Optional[Dict[str, Any]] = None
     honesty_disclaimer: str

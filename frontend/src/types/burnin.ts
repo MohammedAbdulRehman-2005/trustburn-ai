@@ -115,8 +115,11 @@ export interface OverviewStats {
   within_spec_anomalies: number;
   defect_escape_stats?: {
     conventional_escapes: number;
+    conventional_escapes_ratio?: string;
     trustburn_escapes: number;
+    trustburn_escapes_ratio?: string;
     escape_reduction_pct: number;
+    total_defects?: number;
     early_warning_opportunity_count: number;
     description: string;
   };
@@ -220,17 +223,28 @@ export interface ModelValidationResponse {
     false_positive: number;
     true_negative: number;
     false_negative: number;
+    total_defects?: number;
+    total_test_samples?: number;
+    false_negative_ratio?: string;
+    spec_breach_fn_ratio?: string;
   };
   classification_metrics: {
     precision: number;
     recall: number;
     f1_score: number;
     false_negative_rate: number;
+    recall_pct?: number;
+    fnr_pct?: number;
   };
   defect_escape_comparison?: {
     conventional_escapes: number;
+    conventional_escapes_ratio?: string;
     trustburn_escapes: number;
+    trustburn_escapes_ratio?: string;
     escape_reduction_pct: number;
+    total_defects?: number;
+    total_test_samples?: number;
+    spec_breaches_escaped?: string;
   };
   honesty_disclaimer: string;
 }

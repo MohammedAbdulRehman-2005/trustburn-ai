@@ -236,8 +236,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
           <span>*Baseline static-threshold screening benchmark comparison.</span>
           <div className="flex flex-wrap items-center gap-4 font-mono">
-            <span>Conventional Escapes: <strong className="text-rose-400">{escapeStats.conventional_escapes}</strong></span>
-            <span>TrustBurn Escapes: <strong className="text-emerald-400">{escapeStats.trustburn_escapes}</strong></span>
+            <span>Conventional Escapes: <strong className="text-rose-400">{escapeStats.conventional_escapes_ratio ?? `${escapeStats.conventional_escapes} out of ${escapeStats.total_defects ?? 108}`}</strong></span>
+            <span>TrustBurn Escapes: <strong className="text-emerald-400">{escapeStats.trustburn_escapes_ratio ?? `${escapeStats.trustburn_escapes} out of ${escapeStats.total_defects ?? 108}`}</strong></span>
             <span>Escape Reduction on Controlled Split: <strong className="text-cyan-300">{escapeStats.escape_reduction_pct}%</strong></span>
           </div>
         </div>

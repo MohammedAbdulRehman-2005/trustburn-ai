@@ -22,9 +22,9 @@ class DecisionEngine:
         self.policy_version = policy_version
         self.thresholds = {
             "absolute_spec_limit": 50.0,
-            "mad_outlier_threshold": 4.0,
-            "mad_elevated_threshold": 1.8,
-            "early_drift_slope_threshold": 0.04,
+            "mad_outlier_threshold": 3.5,
+            "mad_elevated_threshold": 1.3,
+            "early_drift_slope_threshold": 0.023,
             "forecast_slope_high_risk": 0.20,
             "conformal_confidence": 0.90,
         }
@@ -100,11 +100,15 @@ class DecisionEngine:
             reasons.append("REASON_ELEVATED_LOT_DRIFT")
             action = "Extended Monitoring: Moderate peer-relative drift observed. Continue burn-in to 96h checkpoint."
 
-        # Rule 8: Early drift velocity anomaly (> 0.04 uA/h)
-        elif forecast.projected_slope >= self.thresholds.get("early_drift_slope_threshold", 0.04):
+        # Rule 8: Early drift velocity anomaly (observed >= 0.023 uA/h or projected >= 0.04 uA/h)
+        elif (
+            (trajectory.val_24h is not None and trajectory.val_0h is not None and (trajectory.val_24h - trajectory.val_0h) / 24.0 >= self.thresholds.get("early_drift_slope_threshold", 0.023))
+            or forecast.projected_slope >= 0.04
+        ):
+            early_rate = (trajectory.val_24h - trajectory.val_0h) / 24.0 if (trajectory.val_24h is not None and trajectory.val_0h is not None) else forecast.projected_slope
             decision = "REVIEW"
             reasons.append("REASON_EARLY_DRIFT_VELOCITY")
-            action = f"Early Drift Alert: Drift rate ({forecast.projected_slope:+.4f} {trajectory.unit}/h) indicates accelerating parameter drift. Recommend 96h re-screening."
+            action = f"Early Drift Alert: Drift rate ({early_rate:+.4f} {trajectory.unit}/h) indicates accelerating parameter drift. Recommend 96h re-screening."
 
         # Rule 9: Nominal
         else:

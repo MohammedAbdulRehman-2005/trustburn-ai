@@ -355,23 +355,40 @@ class SystemState:
         fnr = round(fn / max(tp + fn, 1), 3)
         escape_red_pct = round(((conv_escapes - fn) / max(conv_escapes, 1)) * 100, 1)
 
+        total_defects = tp + fn
+        total_test_samples = len(test_cids)
+        spec_breaches = [t for t in self.trajectories if t.split_group == "TEST" and t.val_168h is not None and t.val_168h > 50.0]
+        spec_breach_total = len(spec_breaches)
+        spec_breach_fn = sum(1 for t in spec_breaches if self.decision_map.get(t.component_id) is not None and self.decision_map.get(t.component_id).decision == "PASS")
+
         if self.validation_metrics:
             self.validation_metrics["confusion_matrix"] = {
                 "true_positive": tp,
                 "false_positive": fp,
                 "true_negative": tn,
-                "false_negative": fn
+                "false_negative": fn,
+                "total_defects": total_defects,
+                "total_test_samples": total_test_samples,
+                "false_negative_ratio": f"{fn} out of {total_defects}",
+                "spec_breach_fn_ratio": f"{spec_breach_fn} out of {spec_breach_total}"
             }
             self.validation_metrics["classification_metrics"] = {
                 "precision": precision,
                 "recall": recall,
                 "f1_score": f1,
-                "false_negative_rate": fnr
+                "false_negative_rate": fnr,
+                "recall_pct": round(recall * 100, 1),
+                "fnr_pct": round(fnr * 100, 1)
             }
             self.validation_metrics["defect_escape_comparison"] = {
                 "conventional_escapes": conv_escapes,
+                "conventional_escapes_ratio": f"{conv_escapes} out of {total_defects}",
                 "trustburn_escapes": fn,
-                "escape_reduction_pct": escape_red_pct
+                "trustburn_escapes_ratio": f"{fn} out of {total_defects}",
+                "escape_reduction_pct": escape_red_pct,
+                "total_defects": total_defects,
+                "total_test_samples": total_test_samples,
+                "spec_breaches_escaped": f"{spec_breach_fn} out of {spec_breach_total}"
             }
 
     def get_overview_statistics(self) -> Dict[str, Any]:
@@ -411,6 +428,7 @@ class SystemState:
             })
 
         # Defect escape analysis (Conventional 24h static screening vs TrustBurn)
+        total_defects = 0
         conv_escapes = 0
         tb_escapes = 0
         early_warn_opp = 0
@@ -422,6 +440,8 @@ class SystemState:
                 "LATENT_GATE_OXIDE_CONTAMINATION", "THERMAL_ELECTROMIGRATION_ACCELERATION",
                 "CATASTROPHIC_DIE_ATTACH_VOID", "ELEVATED_WITHIN_SPEC_OUTLIER"
             ])
+            if is_true_defect:
+                total_defects += 1
             # Conventional screening at 24h passes if val_24h <= 50.0
             conv_pass = (t.val_24h is not None and t.val_24h <= 50.0)
             if conv_pass and is_true_defect:
@@ -434,8 +454,11 @@ class SystemState:
         escape_red = round(((conv_escapes - tb_escapes) / max(conv_escapes, 1)) * 100, 1)
         defect_escape_stats = {
             "conventional_escapes": conv_escapes,
+            "conventional_escapes_ratio": f"{conv_escapes} out of {total_defects}",
             "trustburn_escapes": tb_escapes,
+            "trustburn_escapes_ratio": f"{tb_escapes} out of {total_defects}",
             "escape_reduction_pct": escape_red,
+            "total_defects": total_defects,
             "early_warning_opportunity_count": early_warn_opp,
             "description": "Conventional static screening misses within-spec degradation at 24h; TrustBurn AI reduces defect escapes on this controlled benchmark."
         }
