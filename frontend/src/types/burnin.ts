@@ -197,6 +197,8 @@ export interface ModelValidationResponse {
     baseline_mae: number;
     baseline_rmse: number;
     improvement_pct: number;
+    normalized_mae_pct?: number;
+    baseline_normalized_mae_pct?: number;
   };
   uncertainty_metrics: {
     empirical_coverage_pct: number;

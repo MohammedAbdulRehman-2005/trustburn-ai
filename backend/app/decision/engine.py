@@ -23,7 +23,8 @@ class DecisionEngine:
         self.thresholds = {
             "absolute_spec_limit": 50.0,
             "mad_outlier_threshold": 4.0,
-            "mad_elevated_threshold": 2.5,
+            "mad_elevated_threshold": 1.8,
+            "early_drift_slope_threshold": 0.04,
             "forecast_slope_high_risk": 0.20,
             "conformal_confidence": 0.90,
         }
@@ -93,13 +94,19 @@ class DecisionEngine:
                 f"crosses limit ({limit} {trajectory.unit}) despite nominal point prediction ({forecast.predicted_168h:.1f} {trajectory.unit})."
             )
 
-        # Rule 7: Moderately elevated drift
+        # Rule 7: Moderately elevated lot drift
         elif evidence.robust_z_score >= self.thresholds["mad_elevated_threshold"]:
             decision = "REVIEW"
             reasons.append("REASON_ELEVATED_LOT_DRIFT")
             action = "Extended Monitoring: Moderate peer-relative drift observed. Continue burn-in to 96h checkpoint."
 
-        # Rule 8: Nominal
+        # Rule 8: Early drift velocity anomaly (> 0.04 uA/h)
+        elif forecast.projected_slope >= self.thresholds.get("early_drift_slope_threshold", 0.04):
+            decision = "REVIEW"
+            reasons.append("REASON_EARLY_DRIFT_VELOCITY")
+            action = f"Early Drift Alert: Drift rate ({forecast.projected_slope:+.4f} {trajectory.unit}/h) indicates accelerating parameter drift. Recommend 96h re-screening."
+
+        # Rule 9: Nominal
         else:
             decision = "PASS"
             reasons.append("REASON_NOMINAL_STABLE")

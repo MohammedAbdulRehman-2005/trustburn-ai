@@ -27,12 +27,12 @@ class DriftForecaster:
             raise ValueError("Training dataset cannot be empty.")
 
         self.model = HistGradientBoostingRegressor(
-            max_iter=150,
-            learning_rate=0.08,
-            max_depth=5,
-            min_samples_leaf=7,
+            max_iter=160,
+            learning_rate=0.06,
+            max_depth=4,
+            min_samples_leaf=10,
             random_state=seed,
-            loss="squared_error"
+            loss="absolute_error"
         )
         self.model.fit(X_train, y_train)
         self.is_trained = True
@@ -82,11 +82,16 @@ class DriftForecaster:
         base_mae = float(mean_absolute_error(y_test, y_base))
         base_rmse = float(root_mean_squared_error(y_test, y_base))
 
+        norm_mae_pct = round((model_mae / 50.0) * 100.0, 1)
+        base_norm_mae_pct = round((base_mae / 50.0) * 100.0, 1)
+
         return {
             "n_test_samples": len(X_test),
             "model_mae": round(model_mae, 3),
             "model_rmse": round(model_rmse, 3),
             "baseline_mae": round(base_mae, 3),
             "baseline_rmse": round(base_rmse, 3),
+            "normalized_mae_pct": norm_mae_pct,
+            "baseline_normalized_mae_pct": base_norm_mae_pct,
             "improvement_pct": round(100.0 * (base_mae - model_mae) / max(base_mae, 1e-4), 1)
         }

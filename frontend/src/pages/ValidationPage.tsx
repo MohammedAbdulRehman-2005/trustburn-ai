@@ -228,11 +228,14 @@ export const ValidationPage: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-3 text-xs font-mono">
             <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-              <span className="text-slate-400 font-sans block text-[10px] uppercase">Linear Extrapolation Baseline MAE</span>
+              <span className="text-slate-400 font-sans block text-[10px] uppercase">Linear Baseline MAE</span>
               <div className="text-xl font-bold text-slate-300">
                 {val.forecast_metrics?.baseline_mae} µA
               </div>
-              <span className="text-[10px] text-slate-500">Naive slope projection</span>
+              <div className="text-[11px] text-slate-400 font-medium">
+                {val.forecast_metrics?.baseline_normalized_mae_pct ?? ((val.forecast_metrics?.baseline_mae / 50.0) * 100).toFixed(1)}% of Spec Scale
+              </div>
+              <span className="text-[10px] text-slate-500 block">Naive linear projection</span>
             </div>
 
             <div className="p-3 bg-cyan-950/20 rounded-lg border border-cyan-800/40 space-y-1">
@@ -240,13 +243,19 @@ export const ValidationPage: React.FC = () => {
               <div className="text-xl font-bold text-cyan-400">
                 {val.forecast_metrics?.model_mae} µA
               </div>
-              <span className="text-[10px] text-emerald-400 font-bold">
-                {val.forecast_metrics?.improvement_pct}% Error Reduction
+              <div className="text-[11px] text-cyan-300 font-medium">
+                {val.forecast_metrics?.normalized_mae_pct ?? ((val.forecast_metrics?.model_mae / 50.0) * 100).toFixed(1)}% of Spec Scale
+              </div>
+              <span className="text-[10px] text-emerald-400 font-bold block">
+                {val.forecast_metrics?.improvement_pct}% Error Reduction vs Baseline
               </span>
             </div>
           </div>
 
           <div className="text-xs text-slate-400 space-y-1">
+            <p>
+              • <strong>Normalized Error Rate:</strong> Only {val.forecast_metrics?.normalized_mae_pct ?? ((val.forecast_metrics?.model_mae / 50.0) * 100).toFixed(1)}% over 168h forecast relative to 50.0 µA specification limit.
+            </p>
             <p>
               • <strong>RMSE:</strong> {val.forecast_metrics?.model_rmse} µA (vs Baseline {val.forecast_metrics?.baseline_rmse} µA).
             </p>
